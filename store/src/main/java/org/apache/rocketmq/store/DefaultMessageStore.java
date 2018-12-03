@@ -60,6 +60,9 @@ import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
 import static org.apache.rocketmq.store.config.BrokerRole.SLAVE;
 
+/**
+ * 消息appendFile入口类
+ */
 public class DefaultMessageStore implements MessageStore {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 

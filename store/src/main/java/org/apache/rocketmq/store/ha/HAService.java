@@ -327,13 +327,25 @@ public class HAService {
         private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024 * 4;
         private final AtomicReference<String> masterAddress = new AtomicReference<>();
         private final ByteBuffer reportOffset = ByteBuffer.allocate(8);
+        /**
+         * slave到master的channel 及 selector
+         */
         private SocketChannel socketChannel;
         private Selector selector;
         private long lastWriteTimestamp = System.currentTimeMillis();
 
         private long currentReportedOffset = 0;
+        /**
+         * 从byteBufferRead读取commitLog数据的起始位置
+         */
         private int dispatchPostion = 0;
+        /**
+         * slave从master读取commitLog的buffer
+         */
         private ByteBuffer byteBufferRead = ByteBuffer.allocate(READ_MAX_BUFFER_SIZE);
+        /**
+         * temp buffer用于重置byteBufferRead的position相关值
+         */
         private ByteBuffer byteBufferBackup = ByteBuffer.allocate(READ_MAX_BUFFER_SIZE);
 
         public HAClient() throws IOException {
@@ -357,6 +369,11 @@ public class HAService {
             return needHeart;
         }
 
+        /**
+         * 上报slave当前commitLog同步的offset
+         * @param maxOffset
+         * @return
+         */
         private boolean reportSlaveMaxOffset(final long maxOffset) {
             this.reportOffset.position(0);
             this.reportOffset.limit(8);
@@ -377,6 +394,10 @@ public class HAService {
             return !this.reportOffset.hasRemaining();
         }
 
+        /**
+         * 如果byteBufferRead内容不为空（需要进行粘包），重置
+         * position为第一个非空的位置，dispatchPostion重置为0
+         */
         private void reallocateByteBuffer() {
             int remain = READ_MAX_BUFFER_SIZE - this.dispatchPostion;
             if (remain > 0) {
@@ -400,6 +421,10 @@ public class HAService {
             this.byteBufferBackup = tmp;
         }
 
+        /**
+         * slave同步读取master commitlog事件
+         * @return
+         */
         private boolean processReadEvent() {
             int readSizeZeroTimes = 0;
             while (this.byteBufferRead.hasRemaining()) {
@@ -430,16 +455,24 @@ public class HAService {
             return true;
         }
 
+        /**
+         * 处理从socket中读取的commitLog数据，并appendFile
+         * @return
+         */
         private boolean dispatchReadRequest() {
             final int msgHeaderSize = 8 + 4; // phyoffset + size
+            // **byteBufferRead已从socket中读取的内容的最大位置
             int readSocketPos = this.byteBufferRead.position();
 
             while (true) {
+
+                // **diff大于msgHeaderSize，则可能存在需要读取的数据
                 int diff = this.byteBufferRead.position() - this.dispatchPostion;
                 if (diff >= msgHeaderSize) {
                     long masterPhyOffset = this.byteBufferRead.getLong(this.dispatchPostion);
                     int bodySize = this.byteBufferRead.getInt(this.dispatchPostion + 8);
 
+                    // **当前slave已同步的commitLog的最大offset位置
                     long slavePhyOffset = HAService.this.defaultMessageStore.getMaxPhyOffset();
 
                     if (slavePhyOffset != 0) {
@@ -451,12 +484,15 @@ public class HAService {
                     }
 
                     if (diff >= (msgHeaderSize + bodySize)) {
+
+                        // **读取消息体，并append到日志中
                         byte[] bodyData = new byte[bodySize];
                         this.byteBufferRead.position(this.dispatchPostion + msgHeaderSize);
                         this.byteBufferRead.get(bodyData);
 
                         HAService.this.defaultMessageStore.appendToCommitLog(masterPhyOffset, bodyData);
 
+                        // **调整下一个数据包的起始位置dispatchPostion
                         this.byteBufferRead.position(readSocketPos);
                         this.dispatchPostion += msgHeaderSize + bodySize;
 
@@ -468,6 +504,7 @@ public class HAService {
                     }
                 }
 
+                // **读取完成后，存在不完整的数据包，重置byteBufferRead的position, dispatchPostion的值
                 if (!this.byteBufferRead.hasRemaining()) {
                     this.reallocateByteBuffer();
                 }
@@ -478,6 +515,10 @@ public class HAService {
             return true;
         }
 
+        /**
+         * 检测最新已同步的commitLog的offset，并发送至master
+         * @return
+         */
         private boolean reportSlaveMaxOffsetPlus() {
             boolean result = true;
             long currentPhyOffset = HAService.this.defaultMessageStore.getMaxPhyOffset();
@@ -550,6 +591,7 @@ public class HAService {
                 try {
                     if (this.connectMaster()) {
 
+                        // **定时上报master当前slave已经同步的commitLog的位置
                         if (this.isTimeToReportOffset()) {
                             boolean result = this.reportSlaveMaxOffset(this.currentReportedOffset);
                             if (!result) {
@@ -557,17 +599,21 @@ public class HAService {
                             }
                         }
 
+                        // **监听master-->slave的commitLog同步写事件(slave <-- master的读事件)
                         this.selector.select(1000);
 
+                        // **处理commitLog读事件
                         boolean ok = this.processReadEvent();
                         if (!ok) {
                             this.closeMaster();
                         }
 
+                        // **同步已读取offset至master
                         if (!reportSlaveMaxOffsetPlus()) {
                             continue;
                         }
 
+                        // **检测连接是否超时，超时则关闭连接
                         long interval =
                             HAService.this.getDefaultMessageStore().getSystemClock().now()
                                 - this.lastWriteTimestamp;
@@ -579,6 +625,7 @@ public class HAService {
                             log.warn("HAClient, master not response some time, so close connection");
                         }
                     } else {
+                        // **等待5s
                         this.waitForRunning(1000 * 5);
                     }
                 } catch (Exception e) {
