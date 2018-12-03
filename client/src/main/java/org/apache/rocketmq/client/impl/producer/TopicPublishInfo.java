@@ -24,8 +24,11 @@ import org.apache.rocketmq.common.protocol.route.QueueData;
 import org.apache.rocketmq.common.protocol.route.TopicRouteData;
 
 public class TopicPublishInfo {
+    //是否为顺序消息
     private boolean orderTopic = false;
+    //是否包含主题路由信息
     private boolean haveTopicRouterInfo = false;
+    //消息队列
     private List<MessageQueue> messageQueueList = new ArrayList<MessageQueue>();
     private volatile ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex();
     private TopicRouteData topicRouteData;

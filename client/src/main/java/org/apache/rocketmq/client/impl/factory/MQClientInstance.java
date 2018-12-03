@@ -231,14 +231,18 @@ public class MQClientInstance {
                         this.mQClientAPIImpl.fetchNameServerAddr();
                     }
                     // Start request-response channel
+                    //首先调用MQClientAPIImpl. remotingClient方法，启动Netty客户端；
                     this.mQClientAPIImpl.start();
                     // Start various schedule tasks
                     this.startScheduledTask();
                     // Start pull service
+                    //启动PullMessageService服务线程，该服务监听PullMessageService.pullRequestQueue：LinkedBlockingQueue<PullRequest>队列，若该队列有拉取消息的请求，则选择Consumer进行消息的拉取，该定时服务是Consumer使用的；
                     this.pullMessageService.start();
                     // Start rebalance service
+                    //启动RebalanceService服务线程，该服务是Consumer端使用的；
                     this.rebalanceService.start();
                     // Start push service
+                    //启动在初始化MQClientInstance对象过程中初始化的DefaultMQProducer对象，即调用内部初始化的DefaultMQProducer对象的DefaultMQProducerImpl.start（false）方法，参数为false表示在启动该Producer对象的内部不启动MQClientInstance；
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
                     log.info("the client factory [{}] start OK", this.clientId);
                     this.serviceState = ServiceState.RUNNING;
@@ -256,6 +260,7 @@ public class MQClientInstance {
     }
 
     private void startScheduledTask() {
+        //fetchNameServerAddr 定时获取nameserver地址任务
         if (null == this.clientConfig.getNamesrvAddr()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
@@ -269,7 +274,7 @@ public class MQClientInstance {
                 }
             }, 1000 * 10, 1000 * 60 * 2, TimeUnit.MILLISECONDS);
         }
-
+        //updateTopicRouteInfoFromNameServer 定时获取topic路由信息任务
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -281,7 +286,7 @@ public class MQClientInstance {
                 }
             }
         }, 10, this.clientConfig.getPollNameServerInterval(), TimeUnit.MILLISECONDS);
-
+        //sendHeartbeatToAllBroker 启动定时（Producer or Consumer）发送心跳给broker的任务
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -294,7 +299,7 @@ public class MQClientInstance {
                 }
             }
         }, 1000, this.clientConfig.getHeartbeatBrokerInterval(), TimeUnit.MILLISECONDS);
-
+         //persistAllConsumerOffset 启动定时持久化 每隔一段时间将各个队列的消费进度存储到对应的broker上
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -306,7 +311,7 @@ public class MQClientInstance {
                 }
             }
         }, 1000 * 10, this.clientConfig.getPersistConsumerOffsetInterval(), TimeUnit.MILLISECONDS);
-
+        //adjustThreadPool 检测并调整PUSH模式（DefaultMQPushConsumer）下ConsumeMessageService对象中线程池的线程数
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
