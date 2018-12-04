@@ -694,7 +694,10 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                       final TopicPublishInfo topicPublishInfo,
                                       final long timeout) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         long beginStartTime = System.currentTimeMillis();
+        //根据入参MessageQueue对象的brokerName从MQClientInstance.brokerAddrTable获取主用Broker（BrokerID=0）的地址；
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
+        //若该Broker地址为空，则再次调用tryToFindTopicPublishInfo(String topic)方法（详见第3步操作）从topicPublishInfoTable变量中获取TopicPublishInfo对象，
+        //然后在执行上述操作获取主用Broker地址；若仍然为空则抛出MQClientException异常；否则继续下面的操作；
         if (null == brokerAddr) {
             tryToFindTopicPublishInfo(mq.getTopic());
             brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
@@ -713,16 +716,20 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
                 int sysFlag = 0;
                 boolean msgBodyCompressed = false;
+                //若消息内容大于规定的消息内容大小（由DefaultMQProducer.compressMsgBodyOverHowmuch参数指定，默认是4KB）之后就
+                // 使用java.util.zip.DeflaterOutputStream进行对消息内容进行压缩；
                 if (this.tryToCompressMessage(msg)) {
                     sysFlag |= MessageSysFlag.COMPRESSED_FLAG;
                     msgBodyCompressed = true;
                 }
-
+                //若消息内容经过压缩则置sysFlag标志位从右往左第1个字节为1；若消息的property属性中TRAN_MSG字段不为空，
+                // 并且是可解析为true的字符串，则将sysFlag标志位第3个字节为1；
                 final String tranMsg = msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);
                 if (tranMsg != null && Boolean.parseBoolean(tranMsg)) {
                     sysFlag |= MessageSysFlag.TRANSACTION_PREPARED_TYPE;
                 }
-
+                //在应用层实现CheckForbiddenHook接口，并可以调用DefaultMQProducerImpl.RegisterCheckForbiddenHook(CheckForbiddenHook checkForbiddenHook)方法来注册CheckForbiddenHook钩子，
+                // 可以实现CheckForbiddenHook接口，该接口的方法是在消息发送前检查是否属于禁止消息。在此先检查是否注册CheckForbiddenHook钩子，若注册了则执行；
                 if (hasCheckForbiddenHook()) {
                     CheckForbiddenContext checkForbiddenContext = new CheckForbiddenContext();
                     checkForbiddenContext.setNameSrvAddr(this.defaultMQProducer.getNamesrvAddr());
@@ -734,7 +741,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     checkForbiddenContext.setUnitMode(this.isUnitMode());
                     this.executeCheckForbiddenHook(checkForbiddenContext);
                 }
-
+                //在应用层实现SendMessageHook接口可以调用DefaultMQProducerImpl.registerSendMessageHook(SendMessageHook hook)方法注册SendMessageHook钩子，实现该接口的类有两个方法，
+                // 分别是消息发送前和消息发送后的调用。在此先检查是否注册SendMessageHook钩子，若注册了则执行sendMessageBefore方法；在发送结束之后在调用sendMessageAfter方法；
                 if (this.hasSendMessageHook()) {
                     context = new SendMessageContext();
                     context.setProducer(this);
@@ -754,7 +762,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     }
                     this.executeSendMessageHookBefore(context);
                 }
-
+                 //构建SendMessageRequestHeader对象，其中，该对象的defaultTopic变量值等于"TBW102", defaultTopicQueueNums变量值等于DefaultMQProducer.defaultTopicQueueNums值，
+                 // 默认为4，queueId等于MessageQueue对象的queueId；
                 SendMessageRequestHeader requestHeader = new SendMessageRequestHeader();
                 requestHeader.setProducerGroup(this.defaultMQProducer.getProducerGroup());
                 requestHeader.setTopic(msg.getTopic());
@@ -781,7 +790,20 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         MessageAccessor.clearProperty(msg, MessageConst.PROPERTY_MAX_RECONSUME_TIMES);
                     }
                 }
-
+                //调用MQClientAPIImpl.sendMessage(String addr, String brokerName,Message msg, SendMessageRequestHeader requestHeader, long timeoutMillis,
+                // CommunicationMode communicationMode, SendCallback sendCallback)进行消息的发送；在此方法中发送请求码为SEND_MESSAGE的RemotingCommand消息；
+                // 根据通信模式（communicationMode=同步[SYNC]、异步[ASYNC]、单向[ONEWAY]）分别调用不同的方法，将消息内容发送到Broker。
+                // 为了降低网络传输数量，设计了两种SendMessageRequestHeader对象，
+                // 一种是对象的变量名用字母简写替代，类名是 SendMessageRequestHeaderV2，
+                // 一种是对象的变量名是完整的，类名是 SendMessageRequestHeader。
+                //A）同步[SYNC]：在调用发送消息的方法之后，同步等待响应消息，响应信息达到之后调用
+                // MQClientAPIImpl.processSendResponse(String brokerName, Message msg, RemotingCommand response)方法处理响应消息，返回给上层调用者；
+                //B）异步[ASYNC]：在发送消息之前，首先创建了内部匿名InvokeCallback类并实现operationComplete方法，
+                // 并初始化ResponseFuture对象，其中InvokeCallback匿名类就是该对象的InvokeCallback变量值；
+                // 然后将该ResponseFuture对象以请求ID存入NettyRemotingAbstract.ResponseTable: ConcurrentHashMap<Integer /* opaque */, ResponseFuture>变量中；
+                // 最后在收到响应消息之后以响应ID（即请求ID）从NettyRemotingAbstract. ResponseTable变量中取ResponseFuture对象，
+                // 然后调用InvokeCallback类的operationComplete方法，完成回调工作；
+                //C）单向[ONEWAY]：只负责将消息发送出去，不接受响应消息；
                 SendResult sendResult = null;
                 switch (communicationMode) {
                     case ASYNC:
