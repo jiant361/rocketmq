@@ -122,15 +122,21 @@ public class MQClientInstance {
         this(clientConfig, instanceIndex, clientId, null);
     }
 
+
     public MQClientInstance(ClientConfig clientConfig, int instanceIndex, String clientId, RPCHook rpcHook) {
         this.clientConfig = clientConfig;
         this.instanceIndex = instanceIndex;
         this.nettyClientConfig = new NettyClientConfig();
         this.nettyClientConfig.setClientCallbackExecutorThreads(clientConfig.getClientCallbackExecutorThreads());
         this.nettyClientConfig.setUseTLS(clientConfig.isUseTLS());
+        // 初始化ClientRemotingProcessor对象，处理接受的事件请求；
         this.clientRemotingProcessor = new ClientRemotingProcessor(this);
+        // 初始化MQClientAPIImpl对象，在初始化过程中，初始化了MQClientAPIImpl.remotingClient:NettyRemotingClient对象，
+        //将ClientRemotingProcessor对象作为事件处理器注册到NettyRemotingClient对象中，处理的事件号有：
+        //CHECK_TRANSACTION_STATE、NOTIFY_CONSUMER_IDS_CHANGED、RESET_CONSUMER_CLIENT_OFFSET、
+        //GET_CONSUMER_STATUS_FROM_CLIENT、GET_CONSUMER_RUNNING_INFO、CONSUME_MESSAGE_DIRECTLY。
         this.mQClientAPIImpl = new MQClientAPIImpl(this.nettyClientConfig, this.clientRemotingProcessor, rpcHook, clientConfig);
-
+        // 若ClientConfig.namesrvAddr不为空，则拆分成数组存入MQClientAPIImpl.remotingClient变量中；
         if (this.clientConfig.getNamesrvAddr() != null) {
             this.mQClientAPIImpl.updateNameServerAddressList(this.clientConfig.getNamesrvAddr());
             log.info("user specified name server address: {}", this.clientConfig.getNamesrvAddr());
@@ -139,11 +145,12 @@ public class MQClientInstance {
         this.clientId = clientId;
 
         this.mQAdminImpl = new MQAdminImpl(this);
-
+        // 初始化PullMessageService、RebalanceService、ConsumerStatsManager服务线程；
+        // PullMessageService服务线程是供DefaultMQPushConsumer端使用的，RebalanceService服务线程是供Consumser端使用的；
         this.pullMessageService = new PullMessageService(this);
 
         this.rebalanceService = new RebalanceService(this);
-
+         // 初始化producerGroup等于"CLIENT_INNER_PRODUCER"的DefaultMQProducer对象；
         this.defaultMQProducer = new DefaultMQProducer(MixAll.CLIENT_INNER_PRODUCER_GROUP);
         this.defaultMQProducer.resetClientConfig(clientConfig);
 
