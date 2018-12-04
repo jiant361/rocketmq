@@ -28,7 +28,7 @@ public class TransactionListenerImpl implements TransactionListener {
     private AtomicInteger transactionIndex = new AtomicInteger(0);
 
     private ConcurrentHashMap<String, Integer> localTrans = new ConcurrentHashMap<>();
-
+    //当发送prepare消息成功时，该方法会被调用，即执行本地事务方法。
     @Override
     public LocalTransactionState executeLocalTransaction(Message msg, Object arg) {
         int value = transactionIndex.getAndIncrement();
@@ -36,7 +36,8 @@ public class TransactionListenerImpl implements TransactionListener {
         localTrans.put(msg.getTransactionId(), status);
         return LocalTransactionState.UNKNOW;
     }
-
+    //由于RocketMQ迟迟没有收到消息的确认消息，因此主动询问这条prepare消息，是否正常？
+    //可以查询数据库看这条数据是否已经处理,收到查询时会调用此方法，将事务状态返回。
     @Override
     public LocalTransactionState checkLocalTransaction(MessageExt msg) {
         Integer status = localTrans.get(msg.getTransactionId());
