@@ -155,7 +155,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                  //检查producerGroup是否合法：不能为空、长度不能大于255、不能等于"DEFAULT_PRODUCER"；若不合法则直接向应用层抛出MQClientException异常；
                 this.checkConfig();
                 //若producerGroup不等于"CLIENT_INNER_PRODUCER"则设置Producer的实例名（instanceName）；
-                // 调用java的ManagementFactory.getRuntimeMXBean()方法获取该进程的PID作为该Producer的实例名,IP地址@instanceName；
+                // 调用java的ManagementFactory.getRuntimeMXBean()方法获取该进程的PID作为该Producer的实例名instanceName；
                 if (!this.defaultMQProducer.getProducerGroup().equals(MixAll.CLIENT_INNER_PRODUCER_GROUP)) {
                     this.defaultMQProducer.changeInstanceNameToPID();
                 }
@@ -163,7 +163,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 // 创建MQClientInstance对象。先检查单例对象MQClientManager的factoryTable:ConcurrentHashMap<String/<clientId>/,
                 // MQClientInstance>变量中是否存在该ClientID的对象，若存在则直接返回该MQClientInstance对象，若不存在，则创建MQClientInstance对象，
                 // 并以该ClientID为key值将新创建的MQClientInstance对象存入并返回，将返回的MQClientInstance对象赋值给DefaultMQProducerImpl.mQClientFactory变量；
-                // 说明一个IP客户端下面的应用，只有在启动多个进程的情况下才会创建多个MQClientInstance对象；
+                // 说明一个IP客户端下面的应用，只有在启动多个进程或者设置不同instanceName的情况下才会创建多个MQClientInstance对象；
 
                 this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQProducer, rpcHook);
 
