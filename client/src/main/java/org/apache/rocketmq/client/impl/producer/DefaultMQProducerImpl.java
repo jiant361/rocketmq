@@ -385,7 +385,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     public boolean isUnitMode() {
         return this.defaultMQProducer.isUnitMode();
     }
-
+    //在该方法中key参数表示目前在Broker中已经存在的topic，通过该key值获取需要创建newTopic的一个Broker列表，
+    // 然后在这些Broker上创建Topic，queueNum为读写队列的的长度。
     public void createTopic(String key, String newTopic, int queueNum) throws MQClientException {
         createTopic(key, newTopic, queueNum, 0);
     }
