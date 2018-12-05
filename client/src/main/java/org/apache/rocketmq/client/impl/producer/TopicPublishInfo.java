@@ -28,7 +28,7 @@ public class TopicPublishInfo {
     private boolean orderTopic = false;
     //是否包含主题路由信息
     private boolean haveTopicRouterInfo = false;
-    //消息队列
+    //消息队列的集合
     private List<MessageQueue> messageQueueList = new ArrayList<MessageQueue>();
     private volatile ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex();
     private TopicRouteData topicRouteData;
