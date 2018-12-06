@@ -327,12 +327,13 @@ public abstract class RebalanceImpl {
             }
         }
     }
-
+     // 更新ProcessQueueTable
     private boolean updateProcessQueueTableInRebalance(final String topic, final Set<MessageQueue> mqSet,
         final boolean isOrder) {
         boolean changed = false;
-
         Iterator<Entry<MessageQueue, ProcessQueue>> it = this.processQueueTable.entrySet().iterator();
+        // 先遍历processQueueTable，看其topic下的该处理消息队列是否还是应该处理，
+        // 由于新分配之后，消息队列可能会改变，所以原该处理的消息队列可能没必要处理，因此没必要处理的消息队列移除。
         while (it.hasNext()) {
             Entry<MessageQueue, ProcessQueue> next = it.next();
             MessageQueue mq = next.getKey();
@@ -365,7 +366,9 @@ public abstract class RebalanceImpl {
                 }
             }
         }
-
+        // 当然也有可能多出需要处理的消息队列，这里需要建立其与processQueue的对应关系，
+        // 先调用computerPullFromWhere得到该条消息下次拉取数据的位置，在RebalancePullImpl中实现了该方法直接返回0，
+        // 把该处理的mq封装成pq后，更新到processQueueTable中。若有更新，无论是增加还是删除，则changed都设为true。
         List<PullRequest> pullRequestList = new ArrayList<PullRequest>();
         for (MessageQueue mq : mqSet) {
             if (!this.processQueueTable.containsKey(mq)) {
@@ -376,6 +379,7 @@ public abstract class RebalanceImpl {
 
                 this.removeDirtyOffset(mq);
                 ProcessQueue pq = new ProcessQueue();
+                //computePullFromWhere由RebalancePullImpl  RebalancePushImpl 两种方式，对应push和pull两种模式
                 long nextOffset = this.computePullFromWhere(mq);
                 if (nextOffset >= 0) {
                     ProcessQueue pre = this.processQueueTable.putIfAbsent(mq, pq);

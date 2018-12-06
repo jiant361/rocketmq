@@ -249,7 +249,7 @@ public class MQClientInstance {
                     //启动RebalanceService服务线程，该服务是Consumer端使用的；
                     this.rebalanceService.start();
                     // Start push service
-                    //启动在初始化MQClientInstance对象过程中初始化的DefaultMQProducer对象，即调用内部初始化的DefaultMQProducer对象的DefaultMQProducerImpl.start（false）方法，参数为false表示在启动该Producer对象的内部不启动MQClientInstance；
+                    //启动一个groupName为CLIENT_INNER_PRODUCER的DefaultMQProducer，用于将消费失败的消息发回broker,消息的topic格式为%RETRY%ConsumerGroupName
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
                     log.info("the client factory [{}] start OK", this.clientId);
                     this.serviceState = ServiceState.RUNNING;
