@@ -30,10 +30,14 @@ public class PushConsumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("CID_JODIE_1");
+       　// consumer.subscribe("Jodie_topic_1023", "*");
+        //设置消费起点，这里表示从头开始
         consumer.subscribe("TopicTest", "*");
         consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
         //wrong time format 2017_0422_221800
-        consumer.setConsumeTimestamp("20170422221800");
+        //设置消费起点，这里表示从指定时间点开始
+//        consumer.setConsumeTimestamp("20170422221800");
+        //指定消息处理器，此处为并发处理器
         consumer.registerMessageListener(new MessageListenerConcurrently() {
 
             @Override

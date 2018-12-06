@@ -535,27 +535,36 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
         switch (this.serviceState) {
             case CREATE_JUST:
                 this.serviceState = ServiceState.START_FAILED;
-
+                //先是对ConsumerGroup进行验证，非空，合法(符合正则规则，且长度不超过配置最大值)，且不为默认值(防止消费者集群名冲突)，
+                // 然后对消费者消息模式、消息队列分配算法进行非空、合法校验。
                 this.checkConfig();
-
+                //将配置在DefaultMQPullConsumer中的topic信息构造成并构造成subscriptionData数据结构，
+                // 以topic为key以subscriptionData为value以键值对形式存到rebalanceImpl的subscriptionInner中
                 this.copySubscription();
-
+                //若消费模式为集群模式则设置Producer的实例名（instanceName）；
+                // 调用java的ManagementFactory.getRuntimeMXBean()方法获取该进程的PID作为该Producer的实例名instanceName；
                 if (this.defaultMQPullConsumer.getMessageModel() == MessageModel.CLUSTERING) {
                     this.defaultMQPullConsumer.changeInstanceNameToPID();
                 }
-
+                // 创建MQClientInstance对象。先检查单例对象MQClientManager的factoryTable:ConcurrentHashMap<String/<clientId>/,默认clientip +"@"+pid 做clientid .
+                // MQClientInstance>变量中是否存在该ClientID的对象，若存在则直接返回该MQClientInstance对象，若不存在，则创建MQClientInstance对象，
+                // 并以该ClientID为key值将新创建的MQClientInstance对象存入并返回，将返回的MQClientInstance对象赋值给DefaultMQProducerImpl.mQClientFactory变量；
+                // 说明一个IP客户端下面的应用，只有在启动多个进程或者设置不同instanceName的情况下才会创建多个MQClientInstance对象；
                 this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQPullConsumer, this.rpcHook);
-
+                //对rebalanceImpl的消费者组名、消息模式(默认集群)、队列分配算法(默认平均分配)、消费者客户端实例进行配置
                 this.rebalanceImpl.setConsumerGroup(this.defaultMQPullConsumer.getConsumerGroup());
                 this.rebalanceImpl.setMessageModel(this.defaultMQPullConsumer.getMessageModel());
                 this.rebalanceImpl.setAllocateMessageQueueStrategy(this.defaultMQPullConsumer.getAllocateMessageQueueStrategy());
                 this.rebalanceImpl.setmQClientFactory(this.mQClientFactory);
-
+                //PullAPI的构造初始化，将过滤消息钩子注入进去，即这里实现pull消息的过滤
                 this.pullAPIWrapper = new PullAPIWrapper(
                     mQClientFactory,
                     this.defaultMQPullConsumer.getConsumerGroup(), isUnitMode());
                 this.pullAPIWrapper.registerFilterMessageHook(filterMessageHookList);
-
+                //初始化消费者的offsetStore，offset即偏移量，可以理解为消费进度，这里根据不同的消息模式来选择不同的策略。
+                // 如果是广播模式，那么所有消费者都应该收到订阅的消息，那么每个消费者只应该自己消费的消费队列的进度，
+                // 那么需要把消费进度即offsetStore存于本地采用LocalFileOffsetStroe，
+                // 相反的如果是集群模式，那么集群中的消费者来平均消费消息队列，那么应该把消费进度存于远程采用RemoteBrokerOffsetStore。
                 if (this.defaultMQPullConsumer.getOffsetStore() != null) {
                     this.offsetStore = this.defaultMQPullConsumer.getOffsetStore();
                 } else {
@@ -571,9 +580,12 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                     }
                     this.defaultMQPullConsumer.setOffsetStore(this.offsetStore);
                 }
-
+                //load方法加载
                 this.offsetStore.load();
-
+                //将DefaultMQPullConsumerImpl对象在MQClientInstance中注册，以producerGroup为key值、DefaultMQPullConsumerImpl对象为values值
+                // 存入MQClientInstance.consumerTable:ConcurrentHashMap<String/* group */, MQProducerInner>变量中，
+                // 若在该变量中已存在该ConsumerGroup的记录则向应用层抛出MQClientException异常；
+                // 说明在一个客户端的一个进程下面启动多个Consumer时ConsumerGroup名字不能一样，否则无法启动；
                 boolean registerOK = mQClientFactory.registerConsumer(this.defaultMQPullConsumer.getConsumerGroup(), this);
                 if (!registerOK) {
                     this.serviceState = ServiceState.CREATE_JUST;
@@ -582,7 +594,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                         + "] has been created before, specify another name please." + FAQUrl.suggestTodo(FAQUrl.GROUP_NAME_DUPLICATE_URL),
                         null);
                 }
-
+                //启动mQClientFactory
                 mQClientFactory.start();
                 log.info("the consumer [{}] start OK", this.defaultMQPullConsumer.getConsumerGroup());
                 this.serviceState = ServiceState.RUNNING;

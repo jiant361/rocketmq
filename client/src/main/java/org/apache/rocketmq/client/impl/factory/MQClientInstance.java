@@ -136,7 +136,7 @@ public class MQClientInstance {
         //CHECK_TRANSACTION_STATE、NOTIFY_CONSUMER_IDS_CHANGED、RESET_CONSUMER_CLIENT_OFFSET、
         //GET_CONSUMER_STATUS_FROM_CLIENT、GET_CONSUMER_RUNNING_INFO、CONSUME_MESSAGE_DIRECTLY。
         this.mQClientAPIImpl = new MQClientAPIImpl(this.nettyClientConfig, this.clientRemotingProcessor, rpcHook, clientConfig);
-        // 若ClientConfig.namesrvAddr不为空，则拆分成数组存入MQClientAPIImpl.remotingClient变量中；
+        // 若ClientConfig.namesrvAddr不为空，则存入MQClientAPIImpl.remotingClient的本地变量中namesrvAddrList；
         if (this.clientConfig.getNamesrvAddr() != null) {
             this.mQClientAPIImpl.updateNameServerAddressList(this.clientConfig.getNamesrvAddr());
             log.info("user specified name server address: {}", this.clientConfig.getNamesrvAddr());

@@ -160,7 +160,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     this.defaultMQProducer.changeInstanceNameToPID();
                 }
                 //
-                // 创建MQClientInstance对象。先检查单例对象MQClientManager的factoryTable:ConcurrentHashMap<String/<clientId>/,
+                // 创建MQClientInstance对象。先检查单例对象MQClientManager的factoryTable:ConcurrentHashMap<String/<clientId>/,默认clientip +"@"+pid 做clientid .
                 // MQClientInstance>变量中是否存在该ClientID的对象，若存在则直接返回该MQClientInstance对象，若不存在，则创建MQClientInstance对象，
                 // 并以该ClientID为key值将新创建的MQClientInstance对象存入并返回，将返回的MQClientInstance对象赋值给DefaultMQProducerImpl.mQClientFactory变量；
                 // 说明一个IP客户端下面的应用，只有在启动多个进程或者设置不同instanceName的情况下才会创建多个MQClientInstance对象；

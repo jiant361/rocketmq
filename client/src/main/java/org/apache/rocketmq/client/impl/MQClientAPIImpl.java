@@ -167,11 +167,11 @@ public class MQClientAPIImpl {
     private final ClientRemotingProcessor clientRemotingProcessor;
     private String nameSrvAddr = null;
     private ClientConfig clientConfig;
-
     public MQClientAPIImpl(final NettyClientConfig nettyClientConfig,
         final ClientRemotingProcessor clientRemotingProcessor,
         RPCHook rpcHook, final ClientConfig clientConfig) {
         this.clientConfig = clientConfig;
+        //remotingClient完成了netty远程客户端的创建，用以管理具体的网络访问，同时通过TopAddressing的创建完成名称服务寻址功能的实现。
         topAddressing = new TopAddressing(MixAll.getWSAddr(), clientConfig.getUnitName());
         this.remotingClient = new NettyRemotingClient(nettyClientConfig, null);
         this.clientRemotingProcessor = clientRemotingProcessor;
