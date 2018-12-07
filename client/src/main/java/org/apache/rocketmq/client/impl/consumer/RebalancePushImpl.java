@@ -46,7 +46,7 @@ public class RebalancePushImpl extends RebalanceImpl {
         super(consumerGroup, messageModel, allocateMessageQueueStrategy, mQClientFactory);
         this.defaultMQPushConsumerImpl = defaultMQPushConsumerImpl;
     }
-
+    //当push模式下，消息队列发生变化，需更新对应topic的消费版本
     @Override
     public void messageQueueChanged(String topic, Set<MessageQueue> mqAll, Set<MessageQueue> mqDivided) {
         /**

@@ -258,7 +258,9 @@ public abstract class RebalanceImpl {
                 break;
             }
             case CLUSTERING: {
+                //1.从topicSubscribeInfoTable列表中获取与该topic相关的所有消息队列
                 Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
+                //2. 从broker端获取消费该消费组的所有客户端clientId
                 List<String> cidAll = this.mQClientFactory.findConsumerIdList(topic, consumerGroup);
                 if (null == mqSet) {
                     if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
@@ -276,11 +278,12 @@ public abstract class RebalanceImpl {
 
                     Collections.sort(mqAll);
                     Collections.sort(cidAll);
-
+                   // 3.获取消息分配策略，默认设置为AllocateMessageQueueAveragely
                     AllocateMessageQueueStrategy strategy = this.allocateMessageQueueStrategy;
 
                     List<MessageQueue> allocateResult = null;
                     try {
+                        // 4.调用AllocateMessageQueueAveragely.allocate方法，获取当前client分配消费队列
                         allocateResult = strategy.allocate(
                             this.consumerGroup,
                             this.mQClientFactory.getClientId(),
@@ -291,12 +294,12 @@ public abstract class RebalanceImpl {
                             e);
                         return;
                     }
-
+                    // 5. 将分配得到的allocateResult 中的队列放入allocateResultSet 集合
                     Set<MessageQueue> allocateResultSet = new HashSet<MessageQueue>();
                     if (allocateResult != null) {
                         allocateResultSet.addAll(allocateResult);
                     }
-
+                    //6. 更新updateProcessQueue
                     boolean changed = this.updateProcessQueueTableInRebalance(topic, allocateResultSet, isOrder);
                     if (changed) {
                         log.info(

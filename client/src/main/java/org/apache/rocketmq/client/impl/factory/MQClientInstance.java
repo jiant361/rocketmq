@@ -963,6 +963,13 @@ public class MQClientInstance {
         this.rebalanceService.wakeup();
     }
 
+    //1. 要做负载均衡，首先要做的就是信号收集。
+    //所谓信号收集，就是得知道每一个consumerGroup有哪些consumer，对应的topic是谁。信号收集分为Client端信号收集与Broker端信号收集两个部分。
+    //2. 负载均衡放在Client端处理。
+    //具体做法是：消费者客户端在启动时完善rebalanceImpl实例，同时拷贝订阅信息存放rebalanceImpl实例对象中，
+    // 另外也是很重要的一个步骤 -- 通过心跳消息，不停的上报自己到所有Broker，注册RegisterConsumer，
+    // 等待上述过程准备好之后在Client端不断执行的负载均衡服务线程从Broker端获取一份全局信息（该consumerGroup下所有的消费Client），
+    // 然后分配这些全局信息，获取当前客户端分配到的消费队列。
     public void doRebalance() {
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();

@@ -539,7 +539,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                 //先是对ConsumerGroup进行验证，非空，合法(符合正则规则，且长度不超过配置最大值)，且不为默认值(防止消费者集群名冲突)，
                 // 然后对消费者消息模式、消息队列分配算法进行非空、合法校验。
                 this.checkConfig();
-                //将配置在DefaultMQPullConsumer中的topic信息构造成并构造成subscriptionData数据结构，
+                //将配置在DefaultMQPullConsumer中的topic信息构造成subscriptionData数据结构
                 // 以topic为key以subscriptionData为value以键值对形式存到rebalanceImpl的subscriptionInner中
                 this.copySubscription();
                 //若消费模式为集群模式则设置Producer的实例名（instanceName）；
@@ -557,15 +557,15 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                 this.rebalanceImpl.setMessageModel(this.defaultMQPullConsumer.getMessageModel());
                 this.rebalanceImpl.setAllocateMessageQueueStrategy(this.defaultMQPullConsumer.getAllocateMessageQueueStrategy());
                 this.rebalanceImpl.setmQClientFactory(this.mQClientFactory);
-                //PullAPI的构造初始化，将过滤消息钩子注入进去，即这里实现pull消息的过滤
+                //PullAPI的构造初始化，将过滤消息钩子注入进去，即这里实现消费端pull消息的过滤
                 this.pullAPIWrapper = new PullAPIWrapper(
                     mQClientFactory,
                     this.defaultMQPullConsumer.getConsumerGroup(), isUnitMode());
                 this.pullAPIWrapper.registerFilterMessageHook(filterMessageHookList);
                 //初始化消费者的offsetStore，offset即偏移量，可以理解为消费进度，这里根据不同的消息模式来选择不同的策略。
                 // 如果是广播模式，那么所有消费者都应该收到订阅的消息，那么每个消费者只应该自己消费的消费队列的进度，
-                // 那么需要把消费进度即offsetStore存于本地采用LocalFileOffsetStroe，
-                // 相反的如果是集群模式，那么集群中的消费者来平均消费消息队列，那么应该把消费进度存于远程采用RemoteBrokerOffsetStore。
+                // 那么需要把消费进度即offsetStore存于本地，采用LocalFileOffsetStroe，
+                // 相反的如果是集群模式，那么集群中的消费者来平均消费消息队列，那么应该把消费进度存于远程，采用RemoteBrokerOffsetStore。
                 if (this.defaultMQPullConsumer.getOffsetStore() != null) {
                     this.offsetStore = this.defaultMQPullConsumer.getOffsetStore();
                 } else {
