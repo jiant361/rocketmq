@@ -142,11 +142,13 @@ public abstract class RebalanceImpl {
             requestBody.getMqSet().add(mq);
 
             try {
+                //请求Broker获得指定消息队列的分布式锁,Broker 消息队列锁会过期，默认配置 30s,ConsumeMessageOrderlyService 定时刷新过期时间
                 Set<MessageQueue> lockedMq =
                     this.mQClientFactory.getMQClientAPIImpl().lockBatchMQ(findBrokerResult.getBrokerAddr(), requestBody, 1000);
                 for (MessageQueue mmqq : lockedMq) {
                     ProcessQueue processQueue = this.processQueueTable.get(mmqq);
                     if (processQueue != null) {
+                        // 设置消息处理队列锁定成功
                         processQueue.setLocked(true);
                         processQueue.setLastLockTimestamp(System.currentTimeMillis());
                     }
@@ -375,7 +377,7 @@ public abstract class RebalanceImpl {
         List<PullRequest> pullRequestList = new ArrayList<PullRequest>();
         for (MessageQueue mq : mqSet) {
             if (!this.processQueueTable.containsKey(mq)) {
-                if (isOrder && !this.lock(mq)) {
+                if (isOrder && !this.lock(mq)) {// 顺序消息 请求Broker获得指定消息队列的分布式锁
                     log.warn("doRebalance, {}, add a new mq failed, {}, because lock failed", consumerGroup, mq);
                     continue;
                 }
@@ -383,6 +385,8 @@ public abstract class RebalanceImpl {
                 this.removeDirtyOffset(mq);
                 ProcessQueue pq = new ProcessQueue();
                 //computePullFromWhere由RebalancePullImpl  RebalancePushImpl 两种方式，对应push和pull两种模式
+                //pull模式：始终返回0
+                //push模式：根据 DefaultMQPushConsumer 的 consumeFromWhere 属性计算
                 long nextOffset = this.computePullFromWhere(mq);
                 if (nextOffset >= 0) {
                     ProcessQueue pre = this.processQueueTable.putIfAbsent(mq, pq);
@@ -403,7 +407,8 @@ public abstract class RebalanceImpl {
                 }
             }
         }
-
+        //push模式：將拉取请求集合pullRequestList，直接其放入PullMessageService的pullRequestQueue中处理
+        //pull模式：啥也没干
         this.dispatchPullRequest(pullRequestList);
 
         return changed;

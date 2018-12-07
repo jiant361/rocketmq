@@ -45,8 +45,11 @@ public class ProcessQueue {
     private final InternalLogger log = ClientLogger.getLog();
     private final ReadWriteLock lockTreeMap = new ReentrantReadWriteLock();
     private final TreeMap<Long, MessageExt> msgTreeMap = new TreeMap<Long, MessageExt>();
+    //目前已消费消息的总个数，拉取成功时更新该字段
     private final AtomicLong msgCount = new AtomicLong();
+    //目前已消费消息总大小
     private final AtomicLong msgSize = new AtomicLong();
+    //真正消费 消息队列时的锁
     private final Lock lockConsume = new ReentrantLock();
     /**
      * A subset of msgTreeMap, will only be used when orderly consume
