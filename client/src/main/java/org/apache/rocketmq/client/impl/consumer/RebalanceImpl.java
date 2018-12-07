@@ -407,8 +407,8 @@ public abstract class RebalanceImpl {
                 }
             }
         }
-        //push模式：將拉取请求集合pullRequestList，直接其放入PullMessageService的pullRequestQueue中处理
-        //pull模式：啥也没干
+        //push模式：因为是push所以需要主动放进去，將拉取请求集合pullRequestList，直接其放入PullMessageService的pullRequestQueue中处理,
+        //pull模式：因为是pull，自己主动拉取，不需要放入，所以啥也不用干
         this.dispatchPullRequest(pullRequestList);
 
         return changed;

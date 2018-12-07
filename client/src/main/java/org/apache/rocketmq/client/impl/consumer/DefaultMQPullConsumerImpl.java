@@ -69,12 +69,15 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
     private final long consumerStartTimestamp = System.currentTimeMillis();
     //用于处理开始请求前，和请求返回后的钩子
     private final RPCHook rpcHook;
+    //消费消息时的Hook
     private final ArrayList<ConsumeMessageHook> consumeMessageHookList = new ArrayList<ConsumeMessageHook>();
+    //拉取消息后过滤的Hook
     private final ArrayList<FilterMessageHook> filterMessageHookList = new ArrayList<FilterMessageHook>();
     private volatile ServiceState serviceState = ServiceState.CREATE_JUST;
     private MQClientInstance mQClientFactory;
     private PullAPIWrapper pullAPIWrapper;
     private OffsetStore offsetStore;
+    //pull模式的均衡实现
     private RebalanceImpl rebalanceImpl = new RebalancePullImpl(this);
 
     public DefaultMQPullConsumerImpl(final DefaultMQPullConsumer defaultMQPullConsumer, final RPCHook rpcHook) {
