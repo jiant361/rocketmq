@@ -306,7 +306,7 @@ public class MQClientInstance {
                 }
             }
         }, 1000, this.clientConfig.getHeartbeatBrokerInterval(), TimeUnit.MILLISECONDS);
-         //persistAllConsumerOffset 启动定时持久化 每隔一段时间将各个队列的消费进度存储到对应的broker上
+         //persistAllConsumerOffset 启动定时持久化 每隔一段时间将各个队列的消费进度(内存数据)持久化
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
