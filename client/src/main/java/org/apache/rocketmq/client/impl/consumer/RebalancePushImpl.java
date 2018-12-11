@@ -46,7 +46,7 @@ public class RebalancePushImpl extends RebalanceImpl {
         super(consumerGroup, messageModel, allocateMessageQueueStrategy, mQClientFactory);
         this.defaultMQPushConsumerImpl = defaultMQPushConsumerImpl;
     }
-
+    //当push模式下，消息队列发生变化，需更新对应topic的消费版本
     @Override
     public void messageQueueChanged(String topic, Set<MessageQueue> mqAll, Set<MessageQueue> mqDivided) {
         /**
@@ -80,14 +80,18 @@ public class RebalancePushImpl extends RebalanceImpl {
         // notify broker
         this.getmQClientFactory().sendHeartbeatToAllBrokerWithLock();
     }
-
+    //集群模式下，Consumer 移除自己的消息队列时，会向 Broker 解锁该消息队列（广播模式下不需要）
     @Override
     public boolean removeUnnecessaryMessageQueue(MessageQueue mq, ProcessQueue pq) {
+        // 同步队列的消费进度，并移除之
         this.defaultMQPushConsumerImpl.getOffsetStore().persist(mq);
         this.defaultMQPushConsumerImpl.getOffsetStore().removeOffset(mq);
+        // 集群模式下，顺序消费移除时，解锁对队列的锁定
         if (this.defaultMQPushConsumerImpl.isConsumeOrderly()
             && MessageModel.CLUSTERING.equals(this.defaultMQPushConsumerImpl.messageModel())) {
             try {
+                //获取消息队列消费锁，避免和消息队列消费冲突。如果获取锁失败，则移除消息队列失败，等待下次重新分配消费队列时，再进行移除。
+                // 如果未获得锁而进行移除，则可能出现另外的 Consumer 和当前 Consumer 同时消费该消息队列，导致消息无法严格顺序消费。
                 if (pq.getLockConsume().tryLock(1000, TimeUnit.MILLISECONDS)) {
                     try {
                         return this.unlockDelay(mq, pq);

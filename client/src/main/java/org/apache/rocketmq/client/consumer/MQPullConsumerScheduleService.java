@@ -31,7 +31,7 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 
 /**
- * Schedule service for pull consumer
+ * Schedule service for pull consumer ，定时拉取服务 for pull comsumer
  */
 public class MQPullConsumerScheduleService {
     private final InternalLogger log = ClientLogger.getLog();

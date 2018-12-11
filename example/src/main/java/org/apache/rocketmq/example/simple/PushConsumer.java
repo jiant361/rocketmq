@@ -16,7 +16,6 @@
  */
 package org.apache.rocketmq.example.simple;
 
-import java.util.List;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
@@ -25,14 +24,21 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
 
+import java.util.List;
+
 public class PushConsumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("CID_JODIE_1");
-        consumer.subscribe("Jodie_topic_1023", "*");
+       // consumer.subscribe("Jodie_topic_1023", "*");
+        //设置消费的topic，以及Tag的过滤表达式
+        consumer.subscribe("TopicTest", "*");
+        //设置消费起点，这里表示从头开始
         consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
         //wrong time format 2017_0422_221800
-        consumer.setConsumeTimestamp("20170422221800");
+        //设置消费起点，这里表示从指定时间点开始
+//        consumer.setConsumeTimestamp("20170422221800");
+        //指定消息处理器，此处为并发处理器，存在两种并发和顺序
         consumer.registerMessageListener(new MessageListenerConcurrently() {
 
             @Override

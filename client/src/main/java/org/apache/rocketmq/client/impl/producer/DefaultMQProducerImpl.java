@@ -148,17 +148,29 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
     public void start(final boolean startFactory) throws MQClientException {
         switch (this.serviceState) {
+            //检查DefaultMQProducerImpl.ServiceState的状态（初始化状态为ServiceState.CREATE_JUST）；只有状态为CREATE_JUST时才启动该Producer；其他状态均不执行启动过程；
             case CREATE_JUST:
+                //将DefaultMQProducerImpl.ServiceState置为start_failed,以免客户端同一个进程中重复启动；
                 this.serviceState = ServiceState.START_FAILED;
-
+                 //检查producerGroup是否合法：不能为空、长度不能大于255、不能等于"DEFAULT_PRODUCER"；若不合法则直接向应用层抛出MQClientException异常；
                 this.checkConfig();
-
+                //若producerGroup不等于"CLIENT_INNER_PRODUCER"则设置Producer的实例名（instanceName）；
+                // 调用java的ManagementFactory.getRuntimeMXBean()方法获取该进程的PID作为该Producer的实例名instanceName；
                 if (!this.defaultMQProducer.getProducerGroup().equals(MixAll.CLIENT_INNER_PRODUCER_GROUP)) {
                     this.defaultMQProducer.changeInstanceNameToPID();
                 }
+                //
+                // 创建MQClientInstance对象。先检查单例对象MQClientManager的factoryTable:ConcurrentHashMap<String/<clientId>/,默认clientip +"@"+pid 做clientid .
+                // MQClientInstance>变量中是否存在该ClientID的对象，若存在则直接返回该MQClientInstance对象，若不存在，则创建MQClientInstance对象，
+                // 并以该ClientID为key值将新创建的MQClientInstance对象存入并返回，将返回的MQClientInstance对象赋值给DefaultMQProducerImpl.mQClientFactory变量；
+                // 说明一个IP客户端下面的应用，只有在启动多个进程或者设置不同instanceName的情况下才会创建多个MQClientInstance对象；
 
                 this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQProducer, rpcHook);
 
+                //将DefaultMQProducerImpl对象在MQClientInstance中注册，以producerGroup为key值、DefaultMQProducerImpl对象为values值
+                // 存入MQClientInstance.producerTable:ConcurrentHashMap<String/* group */, MQProducerInner>变量中，
+                // 若在该变量中已存在该producerGroup的记录则向应用层抛出MQClientException异常；
+                // 说明在一个客户端的一个进程下面启动多个Producer时producerGroup名字不能一样，否则无法启动；
                 boolean registerOK = mQClientFactory.registerProducer(this.defaultMQProducer.getProducerGroup(), this);
                 if (!registerOK) {
                     this.serviceState = ServiceState.CREATE_JUST;
@@ -166,15 +178,15 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         + "] has been created before, specify another name please." + FAQUrl.suggestTodo(FAQUrl.GROUP_NAME_DUPLICATE_URL),
                         null);
                 }
-
+                //以主题名"TBW102"为key值，新初始化的TopicPublishInfo对象为value值存入DefaultMQProducerImpl.topicPublishInfoTable变量中；
                 this.topicPublishInfoTable.put(this.defaultMQProducer.getCreateTopicKey(), new TopicPublishInfo());
-
+                //入参startFactory等于true，故调用MQClientInstance.start方法启动MQClientInstance对象；
                 if (startFactory) {
                     mQClientFactory.start();
                 }
-
                 log.info("the producer [{}] start OK. sendMessageWithVIPChannel={}", this.defaultMQProducer.getProducerGroup(),
                     this.defaultMQProducer.isSendMessageWithVIPChannel());
+                //设置DefaultMQProducerImpl的ServiceState为RUNNING；
                 this.serviceState = ServiceState.RUNNING;
                 break;
             case RUNNING:
@@ -187,7 +199,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             default:
                 break;
         }
-
+        //立即调用MQClientInstance.sendHeartbeatToAllBrokerWithLock()方法，在该方法中，
+        // 第一，向所有在MQClientInstance.brokerAddrTable列表中的Broker发送心跳消息；
+        // 第二，向Filter过滤服务器发送REGISTER_MESSAGE_FILTER_CLASS请求码，更新过滤服务器中的Filterclass文件：用于服务器端过滤消息
         this.mQClientFactory.sendHeartbeatToAllBrokerWithLock();
     }
 
@@ -371,7 +385,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     public boolean isUnitMode() {
         return this.defaultMQProducer.isUnitMode();
     }
-
+    //在该方法中key参数表示目前在Broker中已经存在的topic，通过该key值获取需要创建newTopic的一个Broker列表，
+    // 然后在这些Broker上创建Topic，queueNum为读写队列的的长度。
     public void createTopic(String key, String newTopic, int queueNum) throws MQClientException {
         createTopic(key, newTopic, queueNum, 0);
     }
@@ -496,24 +511,33 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         final SendCallback sendCallback,
         final long timeout
     ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+        //检查DefaultMQProducerImpl的ServiceState是否为RUNNING，若不是RUNNING状态则直接抛出MQClientException异常给调用者；
         this.makeSureStateOK();
+        //校验Message消息对象的各个字段的合法性，其中Message对象的body的长度不能大于128KB；
         Validators.checkMessage(msg, this.defaultMQProducer);
 
         final long invokeID = random.nextLong();
         long beginTimestampFirst = System.currentTimeMillis();
         long beginTimestampPrev = beginTimestampFirst;
         long endTimestamp = beginTimestampFirst;
+        //先从本地获取topic路由信息，没有再从nameserver中获取再缓存到本地
         TopicPublishInfo topicPublishInfo = this.tryToFindTopicPublishInfo(msg.getTopic());
+        //若上一步获取的TopicPublishInfo对象不为空，并且该对象的List<MessageQueue>队列也不为空，则执行下面的消息发送逻辑，
+        //否则抛出MQClientException异常，表示该topic在本地没有创建消息队列；
         if (topicPublishInfo != null && topicPublishInfo.ok()) {
             boolean callTimeout = false;
             MessageQueue mq = null;
             Exception exception = null;
             SendResult sendResult = null;
+            //设置消息重试次数以及超时时间，分别由参数DefaultMQProducer.retryTimesWhenSendFailed（默认为2）和
+            // DefaultMQProducer.sendMsgTimeout（默认为3000毫秒）设置；重试次数为retryTimesWhenSendFailed+1，
+            // 超时时间为sendMsgTimeout+1000；当发送消息失败，在重试次数小于3和未到达4秒的超时时间，则再次发送消息；
             int timesTotal = communicationMode == CommunicationMode.SYNC ? 1 + this.defaultMQProducer.getRetryTimesWhenSendFailed() : 1;
             int times = 0;
             String[] brokersSent = new String[timesTotal];
             for (; times < timesTotal; times++) {
                 String lastBrokerName = null == mq ? null : mq.getBrokerName();
+                //这里选择发送到哪个队列去
                 MessageQueue mqSelected = this.selectOneMessageQueue(topicPublishInfo, lastBrokerName);
                 if (mqSelected != null) {
                     mq = mqSelected;
@@ -525,7 +549,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                             callTimeout = true;
                             break;
                         }
-
+                        //调用sendKernelImpl(Message msg, MessageQueue mq, CommunicationMode communicationMode, SendCallback sendCallback, long timeout)进行消息的发送工作
                         sendResult = this.sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout - costTime);
                         endTimestamp = System.currentTimeMillis();
                         this.updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, false);
@@ -535,6 +559,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                             case ONEWAY:
                                 return null;
                             case SYNC:
+                                //对于同步方式发送消息，若未发送成功，并且Producer设置允许选择另一个Broker进行发送（参数DefaultMQProducer.retryAnotherBrokerWhenNotStoreOK指定，
+                                // 默认为false，不允许），则从第5步的检查发送失败次数和发送时间是否已经超过阀值开始重新执行；否则直接返回；
                                 if (sendResult.getSendStatus() != SendStatus.SEND_OK) {
                                     if (this.defaultMQProducer.isRetryAnotherBrokerWhenNotStoreOK()) {
                                         continue;
@@ -634,18 +660,28 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         throw new MQClientException("No route info of this topic, " + msg.getTopic() + FAQUrl.suggestTodo(FAQUrl.NO_TOPIC_ROUTE_INFO),
             null).setResponseCode(ClientErrorCode.NOT_FOUND_TOPIC_EXCEPTION);
     }
-
+    //获取topic的路由信息
     private TopicPublishInfo tryToFindTopicPublishInfo(final String topic) {
+        //若没有对应的TopicPublishInfo对象，则创建一个新的TopicPublishInfo对象，
+        // 并存入topicPublishInfoTable变量中（在该变量中有该topic的记录，
+        // 表示该Producer在向NameServer获取到topic信息之后会为该topic创建本地消息队列MessageQueue对象），
+        // 然后调用MQClientInstance.updateTopicRouteInfoFromNameServer(String topic)方法更新刚创建的TopicPublishInfo对象的变量值；
+        // 对于第一次向NameServer获取该topic的TopicPublishInfo对象肯定是获取不到的，故该TopicPublishInfo对象的haveTopicRouterInfo等于false；
         TopicPublishInfo topicPublishInfo = this.topicPublishInfoTable.get(topic);
         if (null == topicPublishInfo || !topicPublishInfo.ok()) {
             this.topicPublishInfoTable.putIfAbsent(topic, new TopicPublishInfo());
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic);
             topicPublishInfo = this.topicPublishInfoTable.get(topic);
         }
-
+        //检查返回的TopicPublishInfo对象的haveTopicRouterInfo和messageQueueList: List<MessageQueue>队列，
+        // 若haveTopicRouterInfo等于true或者TopicPublishInfo对象的messageQueueList:ListList<MessageQueue>变量不为空，则直接返回该TopicPublishInfo对象；
         if (topicPublishInfo.isHaveTopicRouterInfo() || topicPublishInfo.ok()) {
             return topicPublishInfo;
         } else {
+            //调用MQClientInstance.updateTopicRouteInfoFromNameServer (String topic, boolean isDefault, DefaultMQProducer defaultMQProducer)方法
+            // 获取默认topic值"TBW102"的TopicPublishInfo对象，其中isDefault=true，defaultMQProducer等于自身的defaultMQProducer对象，
+            // 在第一次向NameServer获取该topic的TopicPublishInfo对象时会出现此情况。若Broker开启了自动创建Topic功能，
+            // 则在启动Broker时会自动创建TBW102的主题，不建议开启此功能，而应该采用手工创建的方式创建TOPIC；
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic, true, this.defaultMQProducer);
             topicPublishInfo = this.topicPublishInfoTable.get(topic);
             return topicPublishInfo;
@@ -659,7 +695,10 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                       final TopicPublishInfo topicPublishInfo,
                                       final long timeout) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         long beginStartTime = System.currentTimeMillis();
+        //根据入参MessageQueue对象的brokerName从MQClientInstance.brokerAddrTable获取主用Broker（BrokerID=0）的地址；
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
+        //若该Broker地址为空，则再次调用tryToFindTopicPublishInfo(String topic)方法（详见第3步操作）从topicPublishInfoTable变量中获取TopicPublishInfo对象，
+        //然后在执行上述操作获取主用Broker地址；若仍然为空则抛出MQClientException异常；否则继续下面的操作；
         if (null == brokerAddr) {
             tryToFindTopicPublishInfo(mq.getTopic());
             brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
@@ -678,16 +717,20 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
                 int sysFlag = 0;
                 boolean msgBodyCompressed = false;
+                //若消息内容大于规定的消息内容大小（由DefaultMQProducer.compressMsgBodyOverHowmuch参数指定，默认是4KB）之后就
+                // 使用java.util.zip.DeflaterOutputStream进行对消息内容进行压缩；
                 if (this.tryToCompressMessage(msg)) {
                     sysFlag |= MessageSysFlag.COMPRESSED_FLAG;
                     msgBodyCompressed = true;
                 }
-
+                //若消息内容经过压缩则置sysFlag标志位从右往左第1个字节为1；若消息的property属性中TRAN_MSG字段不为空，
+                // 并且是可解析为true的字符串，则将sysFlag标志位第3个字节为1；
                 final String tranMsg = msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);
                 if (tranMsg != null && Boolean.parseBoolean(tranMsg)) {
                     sysFlag |= MessageSysFlag.TRANSACTION_PREPARED_TYPE;
                 }
-
+                //在应用层实现CheckForbiddenHook接口，并可以调用DefaultMQProducerImpl.RegisterCheckForbiddenHook(CheckForbiddenHook checkForbiddenHook)方法来注册CheckForbiddenHook钩子，
+                // 可以实现CheckForbiddenHook接口，该接口的方法是在消息发送前检查是否属于禁止消息。在此先检查是否注册CheckForbiddenHook钩子，若注册了则执行；
                 if (hasCheckForbiddenHook()) {
                     CheckForbiddenContext checkForbiddenContext = new CheckForbiddenContext();
                     checkForbiddenContext.setNameSrvAddr(this.defaultMQProducer.getNamesrvAddr());
@@ -699,7 +742,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     checkForbiddenContext.setUnitMode(this.isUnitMode());
                     this.executeCheckForbiddenHook(checkForbiddenContext);
                 }
-
+                //在应用层实现SendMessageHook接口可以调用DefaultMQProducerImpl.registerSendMessageHook(SendMessageHook hook)方法注册SendMessageHook钩子，实现该接口的类有两个方法，
+                // 分别是消息发送前和消息发送后的调用。在此先检查是否注册SendMessageHook钩子，若注册了则执行sendMessageBefore方法；在发送结束之后在调用sendMessageAfter方法；
                 if (this.hasSendMessageHook()) {
                     context = new SendMessageContext();
                     context.setProducer(this);
@@ -719,7 +763,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     }
                     this.executeSendMessageHookBefore(context);
                 }
-
+                 //构建SendMessageRequestHeader对象，其中，该对象的defaultTopic变量值等于"TBW102", defaultTopicQueueNums变量值等于DefaultMQProducer.defaultTopicQueueNums值，
+                 // 默认为4，queueId等于MessageQueue对象的queueId；
                 SendMessageRequestHeader requestHeader = new SendMessageRequestHeader();
                 requestHeader.setProducerGroup(this.defaultMQProducer.getProducerGroup());
                 requestHeader.setTopic(msg.getTopic());
@@ -746,7 +791,20 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         MessageAccessor.clearProperty(msg, MessageConst.PROPERTY_MAX_RECONSUME_TIMES);
                     }
                 }
-
+                //调用MQClientAPIImpl.sendMessage(String addr, String brokerName,Message msg, SendMessageRequestHeader requestHeader, long timeoutMillis,
+                // CommunicationMode communicationMode, SendCallback sendCallback)进行消息的发送；在此方法中发送请求码为SEND_MESSAGE的RemotingCommand消息；
+                // 根据通信模式（communicationMode=同步[SYNC]、异步[ASYNC]、单向[ONEWAY]）分别调用不同的方法，将消息内容发送到Broker。
+                // 为了降低网络传输数量，设计了两种SendMessageRequestHeader对象，
+                // 一种是对象的变量名用字母简写替代，类名是 SendMessageRequestHeaderV2，
+                // 一种是对象的变量名是完整的，类名是 SendMessageRequestHeader。
+                //A）同步[SYNC]：在调用发送消息的方法之后，同步等待响应消息，响应信息达到之后调用
+                // MQClientAPIImpl.processSendResponse(String brokerName, Message msg, RemotingCommand response)方法处理响应消息，返回给上层调用者；
+                //B）异步[ASYNC]：在发送消息之前，首先创建了内部匿名InvokeCallback类并实现operationComplete方法，
+                // 并初始化ResponseFuture对象，其中InvokeCallback匿名类就是该对象的InvokeCallback变量值；
+                // 然后将该ResponseFuture对象以请求ID存入NettyRemotingAbstract.ResponseTable: ConcurrentHashMap<Integer /* opaque */, ResponseFuture>变量中；
+                // 最后在收到响应消息之后以响应ID（即请求ID）从NettyRemotingAbstract. ResponseTable变量中取ResponseFuture对象，
+                // 然后调用InvokeCallback类的operationComplete方法，完成回调工作；
+                //C）单向[ONEWAY]：只负责将消息发送出去，不接受响应消息；
                 SendResult sendResult = null;
                 switch (communicationMode) {
                     case ASYNC:

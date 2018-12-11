@@ -361,7 +361,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     public RemotingCommand invokeSync(String addr, final RemotingCommand request, long timeoutMillis)
         throws InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException {
         long beginStartTime = System.currentTimeMillis();
+        //这里获取连接，该方法里面会做连接的检查和恢复
         final Channel channel = this.getAndCreateChannel(addr);
+        //如果连接有效则进行请求处理
         if (channel != null && channel.isActive()) {
             try {
                 if (this.rpcHook != null) {
@@ -389,21 +391,23 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 throw e;
             }
         } else {
+            //如果不是有效连接，则关闭连接，抛出异常
             this.closeChannel(addr, channel);
             throw new RemotingConnectException(addr);
         }
     }
 
     private Channel getAndCreateChannel(final String addr) throws InterruptedException {
+        //无论是producer还是consumer，传进来的addr参数都是null
         if (null == addr) {
             return getAndCreateNameserverChannel();
         }
-
+        //因为客户端传入的addr是null，所以客户端不会走到这里来，只有broker才会走到这里来，因为broker传入的addr不为null
         ChannelWrapper cw = this.channelTables.get(addr);
         if (cw != null && cw.isOK()) {
             return cw.getChannel();
         }
-
+        //如果和某个addr的连接不OK了，则再向该nameserver发起重连
         return this.createChannel(addr);
     }
 
@@ -414,6 +418,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
      */
     private Channel getAndCreateNameserverChannel() throws InterruptedException {
         String addr = this.namesrvAddrChoosed.get();
+        //每次调用时，仍然要通过“cw != null && cw.isOK()”检查连接是否OK。
         if (addr != null) {
             ChannelWrapper cw = this.channelTables.get(addr);
             if (cw != null && cw.isOK()) {
@@ -431,7 +436,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                         return cw.getChannel();
                     }
                 }
-
+                //namesrvIndex指示了当前跟哪个nameserver发生连接，初始值是个随机数，跟nameserver数量取模，
+                // 走到这一步，要么是首次发起调用，之前连接还未创建现在要创建了，
+                // 或者是已创建的连接无效了要连接下一个nameserver，就是“cw.isOK()”为false。
                 if (addrList != null && !addrList.isEmpty()) {
                     for (int i = 0; i < addrList.size(); i++) {
                         int index = this.namesrvIndex.incrementAndGet();

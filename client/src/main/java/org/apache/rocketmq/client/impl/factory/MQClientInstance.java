@@ -122,15 +122,21 @@ public class MQClientInstance {
         this(clientConfig, instanceIndex, clientId, null);
     }
 
+
     public MQClientInstance(ClientConfig clientConfig, int instanceIndex, String clientId, RPCHook rpcHook) {
         this.clientConfig = clientConfig;
         this.instanceIndex = instanceIndex;
         this.nettyClientConfig = new NettyClientConfig();
         this.nettyClientConfig.setClientCallbackExecutorThreads(clientConfig.getClientCallbackExecutorThreads());
         this.nettyClientConfig.setUseTLS(clientConfig.isUseTLS());
+        // 初始化ClientRemotingProcessor对象，处理接受的事件请求；
         this.clientRemotingProcessor = new ClientRemotingProcessor(this);
+        // 初始化MQClientAPIImpl对象，在初始化过程中，初始化了MQClientAPIImpl.remotingClient:NettyRemotingClient对象，
+        //将ClientRemotingProcessor对象作为事件处理器注册到NettyRemotingClient对象中，处理的事件号有：
+        //CHECK_TRANSACTION_STATE、NOTIFY_CONSUMER_IDS_CHANGED、RESET_CONSUMER_CLIENT_OFFSET、
+        //GET_CONSUMER_STATUS_FROM_CLIENT、GET_CONSUMER_RUNNING_INFO、CONSUME_MESSAGE_DIRECTLY。
         this.mQClientAPIImpl = new MQClientAPIImpl(this.nettyClientConfig, this.clientRemotingProcessor, rpcHook, clientConfig);
-
+        // 若ClientConfig.namesrvAddr不为空，则存入MQClientAPIImpl.remotingClient的本地变量中namesrvAddrList；
         if (this.clientConfig.getNamesrvAddr() != null) {
             this.mQClientAPIImpl.updateNameServerAddressList(this.clientConfig.getNamesrvAddr());
             log.info("user specified name server address: {}", this.clientConfig.getNamesrvAddr());
@@ -139,11 +145,12 @@ public class MQClientInstance {
         this.clientId = clientId;
 
         this.mQAdminImpl = new MQAdminImpl(this);
-
+        // 初始化PullMessageService、RebalanceService、ConsumerStatsManager服务线程；
+        // PullMessageService服务线程是供DefaultMQPushConsumer端使用的，RebalanceService服务线程是供Consumser端使用的；
         this.pullMessageService = new PullMessageService(this);
 
         this.rebalanceService = new RebalanceService(this);
-
+         // 初始化producerGroup等于"CLIENT_INNER_PRODUCER"的DefaultMQProducer对象；
         this.defaultMQProducer = new DefaultMQProducer(MixAll.CLIENT_INNER_PRODUCER_GROUP);
         this.defaultMQProducer.resetClientConfig(clientConfig);
 
@@ -231,14 +238,18 @@ public class MQClientInstance {
                         this.mQClientAPIImpl.fetchNameServerAddr();
                     }
                     // Start request-response channel
+                    //首先调用MQClientAPIImpl. remotingClient方法，启动Netty客户端；
                     this.mQClientAPIImpl.start();
                     // Start various schedule tasks
                     this.startScheduledTask();
                     // Start pull service
+                    //启动PullMessageService服务线程，该服务监听PullMessageService.pullRequestQueue：LinkedBlockingQueue<PullRequest>队列，若该队列有拉取消息的请求，则选择Consumer进行消息的拉取，该定时服务是Consumer使用的；
                     this.pullMessageService.start();
                     // Start rebalance service
+                    //启动RebalanceService服务线程，该服务是Consumer端使用的；
                     this.rebalanceService.start();
                     // Start push service
+                    //启动一个groupName为CLIENT_INNER_PRODUCER的DefaultMQProducer，用于将消费失败的消息发回broker,消息的topic格式为%RETRY%ConsumerGroupName
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
                     log.info("the client factory [{}] start OK", this.clientId);
                     this.serviceState = ServiceState.RUNNING;
@@ -256,6 +267,7 @@ public class MQClientInstance {
     }
 
     private void startScheduledTask() {
+        //fetchNameServerAddr 定时获取nameserver地址任务
         if (null == this.clientConfig.getNamesrvAddr()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
@@ -269,7 +281,7 @@ public class MQClientInstance {
                 }
             }, 1000 * 10, 1000 * 60 * 2, TimeUnit.MILLISECONDS);
         }
-
+        //updateTopicRouteInfoFromNameServer 定时获取topic路由信息任务
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -281,7 +293,7 @@ public class MQClientInstance {
                 }
             }
         }, 10, this.clientConfig.getPollNameServerInterval(), TimeUnit.MILLISECONDS);
-
+        //sendHeartbeatToAllBroker 启动定时（Producer or Consumer）发送心跳给broker的任务
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -294,7 +306,7 @@ public class MQClientInstance {
                 }
             }
         }, 1000, this.clientConfig.getHeartbeatBrokerInterval(), TimeUnit.MILLISECONDS);
-
+         //persistAllConsumerOffset 启动定时持久化 每隔一段时间将各个队列的消费进度(内存数据)持久化
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -306,7 +318,7 @@ public class MQClientInstance {
                 }
             }
         }, 1000 * 10, this.clientConfig.getPersistConsumerOffsetInterval(), TimeUnit.MILLISECONDS);
-
+        //adjustThreadPool 检测并调整PUSH模式（DefaultMQPushConsumer）下ConsumeMessageService对象中线程池的线程数
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -951,6 +963,13 @@ public class MQClientInstance {
         this.rebalanceService.wakeup();
     }
 
+    //1. 要做负载均衡，首先要做的就是信号收集。
+    //所谓信号收集，就是得知道每一个consumerGroup有哪些consumer，对应的topic是谁。信号收集分为Client端信号收集与Broker端信号收集两个部分。
+    //2. 负载均衡放在Client端处理。
+    //具体做法是：消费者客户端在启动时完善rebalanceImpl实例，同时拷贝订阅信息存放rebalanceImpl实例对象中，
+    // 另外也是很重要的一个步骤 -- 通过心跳消息，不停的上报自己到所有Broker，注册RegisterConsumer，
+    // 等待上述过程准备好之后在Client端不断执行的负载均衡服务线程从Broker端获取一份全局信息（该consumerGroup下所有的消费Client），
+    // 然后分配这些全局信息，获取当前客户端分配到的消费队列。
     public void doRebalance() {
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();
