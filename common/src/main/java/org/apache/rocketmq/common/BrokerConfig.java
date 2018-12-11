@@ -87,9 +87,9 @@ public class BrokerConfig {
     private int endTransactionPoolQueueCapacity = 100000;
 
     private int filterServerNums = 0;
-
+    //是否为长轮询
     private boolean longPollingEnable = true;
-
+    //短轮询未查询到时下一次重试的等待时间
     private long shortPollingTimeMills = 1000;
 
     private boolean notifyConsumerIdsChangedEnable = true;
