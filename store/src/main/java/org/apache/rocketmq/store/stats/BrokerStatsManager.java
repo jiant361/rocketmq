@@ -27,14 +27,23 @@ import org.apache.rocketmq.common.stats.MomentStatsItemSet;
 import org.apache.rocketmq.common.stats.StatsItem;
 import org.apache.rocketmq.common.stats.StatsItemSet;
 
+/**
+ * broker 状态统计管理器
+ */
 public class BrokerStatsManager {
 
     public static final String TOPIC_PUT_NUMS = "TOPIC_PUT_NUMS";
     public static final String TOPIC_PUT_SIZE = "TOPIC_PUT_SIZE";
+    /**
+     * 获取消息数统计项的key
+     */
     public static final String GROUP_GET_NUMS = "GROUP_GET_NUMS";
     public static final String GROUP_GET_SIZE = "GROUP_GET_SIZE";
     public static final String SNDBCK_PUT_NUMS = "SNDBCK_PUT_NUMS";
     public static final String BROKER_PUT_NUMS = "BROKER_PUT_NUMS";
+    /**
+     * 该broker读取的消息数
+     */
     public static final String BROKER_GET_NUMS = "BROKER_GET_NUMS";
     public static final String GROUP_GET_FROM_DISK_NUMS = "GROUP_GET_FROM_DISK_NUMS";
     public static final String GROUP_GET_FROM_DISK_SIZE = "GROUP_GET_FROM_DISK_SIZE";
@@ -178,6 +187,13 @@ public class BrokerStatsManager {
         return this.statsTable.get(GROUP_GET_NUMS).getStatsDataInMinute(statsKey).getTps();
     }
 
+    /**
+     * 记录（读取消息时间-存储消息时间）差值，用于统计
+     * @param group
+     * @param topic
+     * @param queueId
+     * @param fallBehind
+     */
     public void recordDiskFallBehindTime(final String group, final String topic, final int queueId,
         final long fallBehind) {
         final String statsKey = String.format("%d@%s@%s", queueId, topic, group);

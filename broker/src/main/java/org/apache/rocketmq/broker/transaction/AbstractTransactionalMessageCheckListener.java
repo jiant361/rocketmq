@@ -31,6 +31,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 事务状态检查listener，核心方法为resolveHalfMsg，用于异步发送检测请求
+ */
 public abstract class AbstractTransactionalMessageCheckListener {
     private static final InternalLogger LOGGER = InternalLoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
 
@@ -52,6 +55,11 @@ public abstract class AbstractTransactionalMessageCheckListener {
         this.brokerController = brokerController;
     }
 
+    /**
+     * 检查生产者端事务状态
+     * @param msgExt
+     * @throws Exception
+     */
     public void sendCheckMessage(MessageExt msgExt) throws Exception {
         CheckTransactionStateRequestHeader checkTransactionStateRequestHeader = new CheckTransactionStateRequestHeader();
         checkTransactionStateRequestHeader.setCommitLogOffset(msgExt.getCommitLogOffset());
@@ -71,6 +79,10 @@ public abstract class AbstractTransactionalMessageCheckListener {
         }
     }
 
+    /**
+     * 从halfTopic获取消息，发送请求到producer，查询producer本地事务执行状态
+     * @param msgExt
+     */
     public void resolveHalfMsg(final MessageExt msgExt) {
         executorService.execute(new Runnable() {
             @Override

@@ -24,6 +24,9 @@ public class SelectMappedBufferResult {
 
     private final ByteBuffer byteBuffer;
 
+    /**
+     * 大小（byte）
+     */
     private int size;
 
     private MappedFile mappedFile;

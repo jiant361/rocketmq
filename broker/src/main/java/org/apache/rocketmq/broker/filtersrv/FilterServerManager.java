@@ -35,6 +35,9 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
 
+/**
+ * filter Server 管理器，负责filterServer的启动等
+ */
 public class FilterServerManager {
 
     public static final long FILTER_SERVER_MAX_IDLE_TIME_MILLS = 30000;
@@ -50,6 +53,9 @@ public class FilterServerManager {
         this.brokerController = brokerController;
     }
 
+    /**
+     * 定时检查需要启动的filterServer数
+     */
     public void start() {
 
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
@@ -64,6 +70,9 @@ public class FilterServerManager {
         }, 1000 * 5, 1000 * 30, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * 检查需要启动的filterServer 实例数，并进行启动
+     */
     public void createFilterServer() {
         int more =
             this.brokerController.getBrokerConfig().getFilterServerNums() - this.filterServerTable.size();
@@ -111,6 +120,9 @@ public class FilterServerManager {
         }
     }
 
+    /**
+     * 扫描不存活的channel，并关闭
+     */
     public void scanNotActiveChannel() {
 
         Iterator<Entry<Channel, FilterServerInfo>> it = this.filterServerTable.entrySet().iterator();

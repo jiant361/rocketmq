@@ -59,6 +59,9 @@ public class RequestCode {
 
     public static final int CHECK_TRANSACTION_STATE = 39;
 
+    /**
+     * consumerId变更通知
+     */
     public static final int NOTIFY_CONSUMER_IDS_CHANGED = 40;
 
     public static final int LOCK_BATCH_MQ = 41;

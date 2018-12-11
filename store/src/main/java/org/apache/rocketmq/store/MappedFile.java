@@ -42,7 +42,7 @@ import org.apache.rocketmq.store.util.LibC;
 import sun.nio.ch.DirectBuffer;
 
 /**
- * 内存映射文件入口
+ * 映射文件(支持内存映射，传统channel随机访问两种模式)
  */
 public class MappedFile extends ReferenceResource {
     public static final int OS_PAGE_SIZE = 1024 * 4;
@@ -56,20 +56,37 @@ public class MappedFile extends ReferenceResource {
      * 已创建的内存文件个数
      */
     private static final AtomicInteger TOTAL_MAPPED_FILES = new AtomicInteger(0);
+    /**
+     * 已经写到writeBuffer或mappedByteBuffer中的offset
+     */
     protected final AtomicInteger wrotePosition = new AtomicInteger(0);
     //ADD BY ChenYang
+    /**
+     * 已经写到fileChannel的position，启用writeBuffer后
+     */
     protected final AtomicInteger committedPosition = new AtomicInteger(0);
+    /**
+     * 已经写入到磁盘的offset
+     */
     private final AtomicInteger flushedPosition = new AtomicInteger(0);
+    /**
+     * 内存映射的文件大小, 满足大小则进行刷盘
+     */
     protected int fileSize;
+    /**
+     * 随机访问文件channel，主要用于随机读取
+     */
     protected FileChannel fileChannel;
     /**
+     * 配合fileChannel一起使用, 通过fileChannel写入文件
      * Message will put to here first, and then reput to FileChannel if writeBuffer is not null.
      */
     protected ByteBuffer writeBuffer = null;
     protected TransientStorePool transientStorePool = null;
+
     private String fileName;
     /**
-     * 文件起始offset
+     * 映射的起始offset
      */
     private long fileFromOffset;
     private File file;
@@ -157,6 +174,13 @@ public class MappedFile extends ReferenceResource {
         return TOTAL_MAPPED_VIRTUAL_MEMORY.get();
     }
 
+    /**
+     * 初始化mapFile，启用fileChannel的writeBuffer功能
+     * @param fileName
+     * @param fileSize
+     * @param transientStorePool
+     * @throws IOException
+     */
     public void init(final String fileName, final int fileSize,
         final TransientStorePool transientStorePool) throws IOException {
         init(fileName, fileSize);
@@ -174,10 +198,9 @@ public class MappedFile extends ReferenceResource {
         ensureDirOK(this.file.getParent());
 
         try {
-            /**
-             * 创建内存映射文件
-             */
+            // 随机访问文件channel
             this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
+            // 创建内存映射文件
             this.mappedByteBuffer = this.fileChannel.map(MapMode.READ_WRITE, 0, fileSize);
 
             // **更新统计信息

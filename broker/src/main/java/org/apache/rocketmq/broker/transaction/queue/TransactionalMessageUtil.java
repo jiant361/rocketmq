@@ -20,14 +20,28 @@ import org.apache.rocketmq.common.MixAll;
 
 import java.nio.charset.Charset;
 
+/**
+ * 事务消息工具类
+ */
 public class TransactionalMessageUtil {
+    /**
+     * 事务提交或回滚时, 添加tag为d的op message
+     */
     public static final String REMOVETAG = "d";
     public static Charset charset = Charset.forName("utf-8");
 
+    /**
+     * 获取opTopic （commit or rollback topic）
+     * @return
+     */
     public static String buildOpTopic() {
         return MixAll.RMQ_SYS_TRANS_OP_HALF_TOPIC;
     }
 
+    /**
+     * 获取halfTopic （prepare 消息topic）
+     * @return
+     */
     public static String buildHalfTopic() {
         return MixAll.RMQ_SYS_TRANS_HALF_TOPIC;
     }

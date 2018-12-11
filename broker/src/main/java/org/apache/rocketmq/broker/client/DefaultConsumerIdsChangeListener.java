@@ -24,6 +24,9 @@ import java.util.List;
 import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
 
+/**
+ * cusumer变更监听器
+ */
 public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListener {
     private final BrokerController brokerController;
 
@@ -37,6 +40,7 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
             return;
         }
         switch (event) {
+            // cusumer 变更通知客户端
             case CHANGE:
                 if (args == null || args.length < 1) {
                     return;
@@ -48,6 +52,7 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
                     }
                 }
                 break;
+            // 注册，取消注册时调整filterData, 同时会产生CHANGE事件
             case UNREGISTER:
                 this.brokerController.getConsumerFilterManager().unRegister(group);
                 break;

@@ -220,6 +220,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
             this.nettyEventExecutor.start();
         }
 
+        // 定时检测响应结果，触发回调
         this.timer.scheduleAtFixedRate(new TimerTask() {
 
             @Override

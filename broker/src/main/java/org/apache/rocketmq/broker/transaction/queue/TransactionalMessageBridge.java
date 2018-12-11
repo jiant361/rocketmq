@@ -49,6 +49,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 事务消息读写接口
+ */
 public class TransactionalMessageBridge {
     private static final InternalLogger LOGGER = InnerLoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
 
@@ -71,6 +74,11 @@ public class TransactionalMessageBridge {
 
     }
 
+    /**
+     * 获取指定消费队列offset
+     * @param mq
+     * @return
+     */
     public long fetchConsumeOffset(MessageQueue mq) {
         long offset = brokerController.getConsumerOffsetManager().queryOffset(TransactionalMessageUtil.buildConsumerGroup(),
             mq.getTopic(), mq.getQueueId());
@@ -95,12 +103,24 @@ public class TransactionalMessageBridge {
         return mqSet;
     }
 
+    /**
+     * 更新事务real topic（业务topic） offset
+     * @param mq
+     * @param offset
+     */
     public void updateConsumeOffset(MessageQueue mq, long offset) {
         this.brokerController.getConsumerOffsetManager().commitOffset(
             RemotingHelper.parseSocketAddressAddr(this.storeHost), TransactionalMessageUtil.buildConsumerGroup(), mq.getTopic(),
             mq.getQueueId(), offset);
     }
 
+    /**
+     * 获取prepare消息
+     * @param queueId
+     * @param offset
+     * @param nums
+     * @return
+     */
     public PullResult getHalfMessage(int queueId, long offset, int nums) {
         String group = TransactionalMessageUtil.buildConsumerGroup();
         String topic = TransactionalMessageUtil.buildHalfTopic();
@@ -108,6 +128,13 @@ public class TransactionalMessageBridge {
         return getMessage(group, topic, queueId, offset, nums, sub);
     }
 
+    /**
+     * 读取commit or rollback 消息
+     * @param queueId
+     * @param offset
+     * @param nums
+     * @return
+     */
     public PullResult getOpMessage(int queueId, long offset, int nums) {
         String group = TransactionalMessageUtil.buildConsumerGroup();
         String topic = TransactionalMessageUtil.buildOpTopic();
@@ -115,6 +142,16 @@ public class TransactionalMessageBridge {
         return getMessage(group, topic, queueId, offset, nums, sub);
     }
 
+    /**
+     * 拉取消息
+     * @param group 消费组
+     * @param topic
+     * @param queueId 队列id
+     * @param offset 起始offset
+     * @param nums 消息最大个数
+     * @param sub
+     * @return 拉取结果
+     */
     private PullResult getMessage(String group, String topic, int queueId, long offset, int nums,
         SubscriptionData sub) {
         GetMessageResult getMessageResult = store.getMessage(group, topic, queueId, offset, nums, null);
@@ -228,6 +265,12 @@ public class TransactionalMessageBridge {
         }
     }
 
+    /**
+     * 拷贝构建MessageExtBrokerInner
+     * 1.设置
+     * @param msgExt
+     * @return
+     */
     public MessageExtBrokerInner renewImmunityHalfMessageInner(MessageExt msgExt) {
         MessageExtBrokerInner msgInner = renewHalfMessageInner(msgExt);
         String queueOffsetFromPrepare = msgExt.getUserProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET);
@@ -244,6 +287,11 @@ public class TransactionalMessageBridge {
         return msgInner;
     }
 
+    /**
+     * 构建MessageExtBrokerInner
+     * @param msgExt
+     * @return
+     */
     public MessageExtBrokerInner renewHalfMessageInner(MessageExt msgExt) {
         MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
         msgInner.setTopic(msgExt.getTopic());

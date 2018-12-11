@@ -130,6 +130,9 @@ public class MessageStoreConfig {
     private long flushDelayOffsetInterval = 1000 * 10;
     @ImportantField
     private boolean cleanFileForciblyEnable = true;
+    /**
+     * TODO 这个干吗的？
+     */
     private boolean warmMapedFileEnable = false;
     private boolean offsetCheckInSlave = false;
     private boolean debugLockEnable = false;

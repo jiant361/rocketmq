@@ -40,6 +40,9 @@ import org.apache.rocketmq.common.protocol.body.KVTable;
 import org.apache.rocketmq.common.protocol.body.TopicConfigSerializeWrapper;
 import org.apache.rocketmq.common.sysflag.TopicSysFlag;
 
+/**
+ * topicConfig管理器
+ */
 public class TopicConfigManager extends ConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
@@ -48,6 +51,7 @@ public class TopicConfigManager extends ConfigManager {
     private final ConcurrentMap<String, TopicConfig> topicConfigTable =
         new ConcurrentHashMap<String, TopicConfig>(1024);
     private final DataVersion dataVersion = new DataVersion();
+    // 系统内部topic列表
     private final Set<String> systemTopicList = new HashSet<String>();
     private transient BrokerController brokerController;
 
@@ -91,6 +95,7 @@ public class TopicConfigManager extends ConfigManager {
         }
         {
 
+            // TODO 这个主题的作用？
             String topic = this.brokerController.getBrokerConfig().getBrokerClusterName();
             TopicConfig topicConfig = new TopicConfig(topic);
             this.systemTopicList.add(topic);
@@ -103,6 +108,7 @@ public class TopicConfigManager extends ConfigManager {
         }
         {
 
+            // TODO 这个主题的作用？
             String topic = this.brokerController.getBrokerConfig().getBrokerName();
             TopicConfig topicConfig = new TopicConfig(topic);
             this.systemTopicList.add(topic);
@@ -116,7 +122,7 @@ public class TopicConfigManager extends ConfigManager {
             this.topicConfigTable.put(topicConfig.getTopicName(), topicConfig);
         }
         {
-            // MixAll.OFFSET_MOVED_EVENT
+            // MixAll.OFFSET_MOVED_EVENT 用于内部发布offset变更事件
             String topic = MixAll.OFFSET_MOVED_EVENT;
             TopicConfig topicConfig = new TopicConfig(topic);
             this.systemTopicList.add(topic);
@@ -134,6 +140,11 @@ public class TopicConfigManager extends ConfigManager {
         return this.systemTopicList;
     }
 
+    /**
+     * 内部topic(AUTO_CREATE_TOPIC_KEY_TOPIC)不允许业务层调用发送消息
+     * @param topic
+     * @return
+     */
     public boolean isTopicCanSendMessage(final String topic) {
         return !topic.equals(MixAll.AUTO_CREATE_TOPIC_KEY_TOPIC);
     }
@@ -142,6 +153,15 @@ public class TopicConfigManager extends ConfigManager {
         return this.topicConfigTable.get(topic);
     }
 
+    /**
+     * 发送消息的过程中获取topicConfig信息，如不存在创建topicConfig
+     * @param topic
+     * @param defaultTopic
+     * @param remoteAddress
+     * @param clientDefaultTopicQueueNums
+     * @param topicSysFlag
+     * @return
+     */
     public TopicConfig createTopicInSendMessageMethod(final String topic, final String defaultTopic,
         final String remoteAddress, final int clientDefaultTopicQueueNums, final int topicSysFlag) {
         TopicConfig topicConfig = null;
@@ -150,14 +170,17 @@ public class TopicConfigManager extends ConfigManager {
         try {
             if (this.lockTopicConfigTable.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
                 try {
+                    // **获取topic配置信息
                     topicConfig = this.topicConfigTable.get(topic);
                     if (topicConfig != null)
                         return topicConfig;
 
+                    // **根据defaultTopic构建新的topicConfig
                     TopicConfig defaultTopicConfig = this.topicConfigTable.get(defaultTopic);
                     if (defaultTopicConfig != null) {
                         if (defaultTopic.equals(MixAll.AUTO_CREATE_TOPIC_KEY_TOPIC)) {
                             if (!this.brokerController.getBrokerConfig().isAutoCreateTopicEnable()) {
+                                // **设置为读写权限
                                 defaultTopicConfig.setPerm(PermName.PERM_READ | PermName.PERM_WRITE);
                             }
                         }
@@ -176,6 +199,7 @@ public class TopicConfigManager extends ConfigManager {
                             topicConfig.setReadQueueNums(queueNums);
                             topicConfig.setWriteQueueNums(queueNums);
                             int perm = defaultTopicConfig.getPerm();
+                            // 增加继承权限
                             perm &= ~PermName.PERM_INHERIT;
                             topicConfig.setPerm(perm);
                             topicConfig.setTopicSysFlag(topicSysFlag);
@@ -316,6 +340,10 @@ public class TopicConfigManager extends ConfigManager {
         this.persist();
     }
 
+    /**
+     * 更新topic order属性
+     * @param orderKVTableFromNs
+     */
     public void updateOrderTopicConfig(final KVTable orderKVTableFromNs) {
 
         if (orderKVTableFromNs != null && orderKVTableFromNs.getTable() != null) {
@@ -324,6 +352,7 @@ public class TopicConfigManager extends ConfigManager {
             for (String topic : orderTopics) {
                 TopicConfig topicConfig = this.topicConfigTable.get(topic);
                 if (topicConfig != null && !topicConfig.isOrder()) {
+                    // 设置为排序topic
                     topicConfig.setOrder(true);
                     isChange = true;
                     log.info("update order topic config, topic={}, order={}", topic, true);
@@ -335,6 +364,7 @@ public class TopicConfigManager extends ConfigManager {
                 if (!orderTopics.contains(topic)) {
                     TopicConfig topicConfig = entry.getValue();
                     if (topicConfig.isOrder()) {
+                        // 设置为非排序topic
                         topicConfig.setOrder(false);
                         isChange = true;
                         log.info("update order topic config, topic={}, order={}", topic, false);
@@ -407,6 +437,10 @@ public class TopicConfigManager extends ConfigManager {
         return topicConfigSerializeWrapper.toJson(prettyFormat);
     }
 
+    /**
+     * 输出首次加载配置信息
+     * @param tcs
+     */
     private void printLoadDataWhenFirstBoot(final TopicConfigSerializeWrapper tcs) {
         Iterator<Entry<String, TopicConfig>> it = tcs.getTopicConfigTable().entrySet().iterator();
         while (it.hasNext()) {

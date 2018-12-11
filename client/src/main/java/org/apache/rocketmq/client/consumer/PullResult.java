@@ -19,9 +19,15 @@ package org.apache.rocketmq.client.consumer;
 import java.util.List;
 import org.apache.rocketmq.common.message.MessageExt;
 
+/**
+ * 消费消息拉取结果
+ */
 public class PullResult {
     private final PullStatus pullStatus;
     private final long nextBeginOffset;
+    /**
+     * 消费队列中的最小，最大offset
+     */
     private final long minOffset;
     private final long maxOffset;
     private List<MessageExt> msgFoundList;

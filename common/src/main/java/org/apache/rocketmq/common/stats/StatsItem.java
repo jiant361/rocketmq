@@ -24,10 +24,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.rocketmq.common.UtilAll;
 import org.apache.rocketmq.logging.InternalLogger;
 
+/**
+ * 统计项
+ */
 public class StatsItem {
 
+    /**
+     * 统计值
+     */
     private final AtomicLong value = new AtomicLong(0);
 
+    /**
+     * 统计次数（每次统计+1）
+     */
     private final AtomicLong times = new AtomicLong(0);
 
     private final LinkedList<CallSnapshot> csListMinute = new LinkedList<CallSnapshot>();

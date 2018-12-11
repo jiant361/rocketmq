@@ -29,9 +29,15 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.common.utils.HttpTinyClient;
 
+/**
+ * NameServer地址信息服务
+ */
 public class TopAddressing {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /**
+     * nameServer 地址
+     */
     private String nsAddr;
     private String wsAddr;
     private String unitName;
@@ -64,7 +70,14 @@ public class TopAddressing {
         return fetchNSAddr(true, 3000);
     }
 
+    /**
+     * 查找nameServer 地址
+     * @param verbose
+     * @param timeoutMills
+     * @return
+     */
     public final String fetchNSAddr(boolean verbose, long timeoutMills) {
+        // TODO 此处的地址是什么
         String url = this.wsAddr;
         try {
             if (!UtilAll.isBlank(this.unitName)) {

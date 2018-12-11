@@ -28,15 +28,24 @@ import java.util.Properties;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * 配置中心包含
+ * （this.brokerConfig, this.nettyServerConfig,
+ * this.nettyClientConfig, this.messageStoreConfig）等
+ */
 public class Configuration {
 
     private final InternalLogger log;
 
+    /**
+     * 配置object对象，如brokerConfig等，同时配置信息会维护在allConfigs中
+     */
     private List<Object> configObjectList = new ArrayList<Object>(4);
     private String storePath;
     private boolean storePathFromConfig = false;
     private Object storePathObject;
     private Field storePathField;
+
     private DataVersion dataVersion = new DataVersion();
     private ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     /**

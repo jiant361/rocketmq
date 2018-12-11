@@ -30,6 +30,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 消息编解码器，用于序列化及反序列化
+ */
 public class MessageDecoder {
     public final static int MSG_ID_LENGTH = 8 + 8;
 
@@ -243,6 +246,14 @@ public class MessageDecoder {
         return decode(byteBuffer, readBody, deCompressBody, false);
     }
 
+    /**
+     * 消息反序列化，参看序列化消息结构
+     * @param byteBuffer
+     * @param readBody
+     * @param deCompressBody
+     * @param isClient
+     * @return
+     */
     public static MessageExt decode(
         java.nio.ByteBuffer byteBuffer, final boolean readBody, final boolean deCompressBody, final boolean isClient) {
         try {

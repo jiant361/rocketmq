@@ -35,6 +35,9 @@ import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
 
+/**
+ * 生产者管理器
+ */
 public class ProducerManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
@@ -64,6 +67,9 @@ public class ProducerManager {
         return newGroupChannelTable;
     }
 
+    /**
+     * 扫描非存活channel
+     */
     public void scanNotActiveChannel() {
         try {
             if (this.groupChannelLock.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {

@@ -16,10 +16,15 @@
  */
 package org.apache.rocketmq.common.constant;
 
+/**
+ * 权限名称
+ */
 public class PermName {
     public static final int PERM_PRIORITY = 0x1 << 3;
     public static final int PERM_READ = 0x1 << 2;
     public static final int PERM_WRITE = 0x1 << 1;
+
+    // TODO 继承？？干嘛的
     public static final int PERM_INHERIT = 0x1 << 0;
 
     public static String perm2String(final int perm) {

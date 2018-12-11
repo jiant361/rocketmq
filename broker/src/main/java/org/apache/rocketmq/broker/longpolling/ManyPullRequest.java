@@ -19,6 +19,9 @@ package org.apache.rocketmq.broker.longpolling;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 用于存储统一topic，quenue挂住的拉取请求
+ */
 public class ManyPullRequest {
     private final ArrayList<PullRequest> pullRequestList = new ArrayList<>();
 

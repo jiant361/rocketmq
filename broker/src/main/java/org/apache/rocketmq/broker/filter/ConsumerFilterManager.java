@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 消费者表过时过滤器管理
  * Consumer filter data manager.Just manage the consumers use expression filter.
  */
 public class ConsumerFilterManager extends ConfigManager {
@@ -102,6 +103,8 @@ public class ConsumerFilterManager extends ConfigManager {
     }
 
     public void register(final String consumerGroup, final Collection<SubscriptionData> subList) {
+
+        // **注册过滤信息
         for (SubscriptionData subscriptionData : subList) {
             register(
                 subscriptionData.getTopic(),
@@ -174,6 +177,7 @@ public class ConsumerFilterManager extends ConfigManager {
         return this.filterDataByTopic.get(topic).getGroupFilterData().get(consumerGroup);
     }
 
+    // 获取当前分组的所有过滤表达式信息
     public Collection<ConsumerFilterData> getByGroup(final String consumerGroup) {
         Collection<ConsumerFilterData> ret = new HashSet<ConsumerFilterData>();
 
@@ -320,6 +324,9 @@ public class ConsumerFilterManager extends ConfigManager {
         this.filterDataByTopic = filterDataByTopic;
     }
 
+    /**
+     * 过滤表达式(元数据)
+     */
     public static class FilterDataMapByTopic {
 
         private ConcurrentMap<String/*consumer group*/, ConsumerFilterData>
@@ -352,6 +359,15 @@ public class ConsumerFilterManager extends ConfigManager {
             data.setDeadTime(now);
         }
 
+        /**
+         * 根据consumerGroup 注册过滤表达式
+         * @param consumerGroup
+         * @param expression
+         * @param type
+         * @param bloomFilterData
+         * @param clientVersion
+         * @return
+         */
         public boolean register(String consumerGroup, String expression, String type, BloomFilterData bloomFilterData,
             long clientVersion) {
             ConsumerFilterData old = this.groupFilterData.get(consumerGroup);

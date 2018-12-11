@@ -32,11 +32,15 @@ import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.store.config.BrokerRole;
 
 /**
+ * MappedFile创建服务
  * Create MappedFile in advance
  */
 public class AllocateMappedFileService extends ServiceThread {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static int waitTimeOut = 1000 * 5;
+    /**
+     * filePath-->请求
+     */
     private ConcurrentMap<String, AllocateRequest> requestTable =
         new ConcurrentHashMap<String, AllocateRequest>();
     private PriorityBlockingQueue<AllocateRequest> requestQueue =
@@ -50,6 +54,7 @@ public class AllocateMappedFileService extends ServiceThread {
 
     public MappedFile putRequestAndReturnMappedFile(String nextFilePath, String nextNextFilePath, int fileSize) {
         int canSubmitRequests = 2;
+        // **开启瞬态writeBuffer功能时的pool大小相关校验
         if (this.messageStore.getMessageStoreConfig().isTransientStorePoolEnable()) {
             if (this.messageStore.getMessageStoreConfig().isFastFailIfNoBufferInStorePool()
                 && BrokerRole.SLAVE != this.messageStore.getMessageStoreConfig().getBrokerRole()) { //if broker is slave, don't fast fail even no buffer in pool
@@ -57,9 +62,9 @@ public class AllocateMappedFileService extends ServiceThread {
             }
         }
 
+        // **提交nextFilePath 创建请求
         AllocateRequest nextReq = new AllocateRequest(nextFilePath, fileSize);
         boolean nextPutOK = this.requestTable.putIfAbsent(nextFilePath, nextReq) == null;
-
         if (nextPutOK) {
             if (canSubmitRequests <= 0) {
                 log.warn("[NOTIFYME]TransientStorePool is not enough, so create mapped file error, " +
@@ -74,6 +79,7 @@ public class AllocateMappedFileService extends ServiceThread {
             canSubmitRequests--;
         }
 
+        // **提交nextNextFilePath 创建请求
         AllocateRequest nextNextReq = new AllocateRequest(nextNextFilePath, fileSize);
         boolean nextNextPutOK = this.requestTable.putIfAbsent(nextNextFilePath, nextNextReq) == null;
         if (nextNextPutOK) {
@@ -94,9 +100,11 @@ public class AllocateMappedFileService extends ServiceThread {
             return null;
         }
 
+        // **如果请求已经创建成功，则等待异步线程分配结果
         AllocateRequest result = this.requestTable.get(nextFilePath);
         try {
             if (result != null) {
+                // 等待创建成功信号量
                 boolean waitOK = result.getCountDownLatch().await(waitTimeOut, TimeUnit.MILLISECONDS);
                 if (!waitOK) {
                     log.warn("create mmap timeout " + result.getFilePath() + " " + result.getFileSize());
@@ -148,6 +156,7 @@ public class AllocateMappedFileService extends ServiceThread {
     }
 
     /**
+     * 处理文件分配请求，创建mappedFile
      * Only interrupted by the external thread, will return false
      */
     private boolean mmapOperation() {
@@ -155,6 +164,7 @@ public class AllocateMappedFileService extends ServiceThread {
         AllocateRequest req = null;
         try {
             req = this.requestQueue.take();
+            // 参数校验
             AllocateRequest expectedRequest = this.requestTable.get(req.getFilePath());
             if (null == expectedRequest) {
                 log.warn("this mmap request expired, maybe cause timeout " + req.getFilePath() + " "
@@ -167,12 +177,15 @@ public class AllocateMappedFileService extends ServiceThread {
                 return true;
             }
 
+            // 文件为空，进行创建
             if (req.getMappedFile() == null) {
                 long beginTime = System.currentTimeMillis();
 
                 MappedFile mappedFile;
+                // **启用瞬态存储池时，即启用mappedFile中的writeBuffer功能
                 if (messageStore.getMessageStoreConfig().isTransientStorePoolEnable()) {
                     try {
+                        // **使用transientStorePool进行初始化
                         mappedFile = ServiceLoader.load(MappedFile.class).iterator().next();
                         mappedFile.init(req.getFilePath(), req.getFileSize(), messageStore.getTransientStorePool());
                     } catch (RuntimeException e) {
@@ -190,6 +203,7 @@ public class AllocateMappedFileService extends ServiceThread {
                         + " " + req.getFilePath() + " " + req.getFileSize());
                 }
 
+                // mappedFile的fileSize大于配置的commitLogFileSize，且开启了warmMap，则进行刷盘 TODO 是什么鬼？
                 // pre write mappedFile
                 if (mappedFile.getFileSize() >= this.messageStore.getMessageStoreConfig()
                     .getMapedFileSizeCommitLog()
@@ -218,6 +232,7 @@ public class AllocateMappedFileService extends ServiceThread {
                 }
             }
         } finally {
+            // 创建成功，修改信号量
             if (req != null && isSuccess)
                 req.getCountDownLatch().countDown();
         }

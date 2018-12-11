@@ -38,8 +38,12 @@ public class ManyMessageTransfer extends AbstractReferenceCounted implements Fil
         this.getMessageResult = getMessageResult;
     }
 
+    /**
+     * Returns the offset in the file where the transfer began.
+     */
     @Override
     public long position() {
+        // header+已发送msg 的大小
         int pos = byteBufferHeader.position();
         List<ByteBuffer> messageBufferList = this.getMessageResult.getMessageBufferList();
         for (ByteBuffer bb : messageBufferList) {
@@ -48,11 +52,17 @@ public class ManyMessageTransfer extends AbstractReferenceCounted implements Fil
         return pos;
     }
 
+    /**
+     * Return the bytes which was transfered already
+     */
     @Override
     public long transfered() {
         return transferred;
     }
 
+    /**
+     * Returns the number of bytes to transfer.
+     */
     @Override
     public long count() {
         return byteBufferHeader.limit() + this.getMessageResult.getBufferTotalSize();

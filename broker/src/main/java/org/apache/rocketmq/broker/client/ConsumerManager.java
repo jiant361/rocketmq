@@ -33,6 +33,9 @@ import org.apache.rocketmq.common.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.common.RemotingUtil;
 
+/**
+ * 消费者组管理器（消费者组信息，消费者变更事件监听）
+ */
 public class ConsumerManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final long CHANNEL_EXPIRED_TIMEOUT = 1000 * 120;
@@ -74,6 +77,11 @@ public class ConsumerManager {
         return 0;
     }
 
+    /**
+     * 消费者channel关闭事件处理
+     * @param remoteAddr
+     * @param channel
+     */
     public void doChannelCloseEvent(final String remoteAddr, final Channel channel) {
         Iterator<Entry<String, ConsumerGroupInfo>> it = this.consumerTable.entrySet().iterator();
         while (it.hasNext()) {

@@ -220,19 +220,22 @@ public class BrokerController {
     }
 
     public boolean initialize() throws CloneNotSupportedException {
+
+        // 加载序列化信息
         boolean result = this.topicConfigManager.load();
 
         result = result && this.consumerOffsetManager.load();
         result = result && this.subscriptionGroupManager.load();
         result = result && this.consumerFilterManager.load();
 
+        // 初始化message store 信息
         if (result) {
             try {
                 this.messageStore =
                     new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager, this.messageArrivingListener,
                         this.brokerConfig);
                 this.brokerStats = new BrokerStats((DefaultMessageStore) this.messageStore);
-                //load plugin
+                //load plugin 如果存在用户自定义message store,则使用自定义store
                 MessageStorePluginContext context = new MessageStorePluginContext(messageStoreConfig, brokerStatsManager, messageArrivingListener, brokerConfig);
                 this.messageStore = MessageStoreFactory.build(context, this.messageStore);
                 this.messageStore.getDispatcherList().addFirst(new CommitLogDispatcherCalcBitMap(this.brokerConfig, this.consumerFilterManager));
@@ -244,6 +247,7 @@ public class BrokerController {
 
         result = result && this.messageStore.load();
 
+        // 初始化服务及相关任务
         if (result) {
             this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.clientHousekeepingService);
             NettyServerConfig fastConfig = (NettyServerConfig) this.nettyServerConfig.clone();
@@ -307,6 +311,7 @@ public class BrokerController {
 
             this.registerProcessor();
 
+            // 24小时记录一次put/get消息数
             final long initialDelay = UtilAll.computNextMorningTimeMillis() - System.currentTimeMillis();
             final long period = 1000 * 60 * 60 * 24;
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
@@ -320,6 +325,7 @@ public class BrokerController {
                 }
             }, initialDelay, period, TimeUnit.MILLISECONDS);
 
+            // 默认5s持久化一次offset
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -331,6 +337,7 @@ public class BrokerController {
                 }
             }, 1000 * 10, this.brokerConfig.getFlushConsumerOffsetInterval(), TimeUnit.MILLISECONDS);
 
+            // 默认10s持久化一次消费者过滤表达式
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -342,6 +349,7 @@ public class BrokerController {
                 }
             }, 1000 * 10, 1000 * 10, TimeUnit.MILLISECONDS);
 
+            // 3分钟检查一次是否关闭过慢的订阅分组
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -353,6 +361,7 @@ public class BrokerController {
                 }
             }, 3, 3, TimeUnit.MINUTES);
 
+            // 1s中打印一次队列信息
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -364,6 +373,7 @@ public class BrokerController {
                 }
             }, 10, 1, TimeUnit.SECONDS);
 
+            // 1分钟打印一次已经commitLog，但未分派到consumerQueue的字节数
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
                 @Override
@@ -379,7 +389,9 @@ public class BrokerController {
             if (this.brokerConfig.getNamesrvAddr() != null) {
                 this.brokerOuterAPI.updateNameServerAddressList(this.brokerConfig.getNamesrvAddr());
                 log.info("Set user specified name server address: {}", this.brokerConfig.getNamesrvAddr());
-            } else if (this.brokerConfig.isFetchNamesrvAddrByAddressServer()) {
+            }
+            // 2分钟获取一次nameServer地址
+            else if (this.brokerConfig.isFetchNamesrvAddrByAddressServer()) {
                 this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
                     @Override
@@ -401,6 +413,7 @@ public class BrokerController {
                     this.updateMasterHAServerAddrPeriodically = true;
                 }
 
+                // 1分钟同步一次master的配置及offset信息
                 this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
                     @Override
@@ -413,6 +426,7 @@ public class BrokerController {
                     }
                 }, 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
             } else {
+                // master 每分钟打印slaver 同步落后的差值
                 this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
                     @Override
@@ -426,6 +440,7 @@ public class BrokerController {
                 }, 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
             }
 
+            // ssl热加载配置
             if (TlsSystemConfig.tlsMode != TlsMode.DISABLED) {
                 // Register a listener to reload SslContext
                 try {
@@ -471,6 +486,9 @@ public class BrokerController {
         return result;
     }
 
+    /**
+     * 初始化事务配置
+     */
     private void initialTransaction() {
         this.transactionalMessageService = ServiceProvider.loadClass(ServiceProvider.TRANSACTION_SERVICE_ID, TransactionalMessageService.class);
         if (null == this.transactionalMessageService) {
@@ -486,6 +504,9 @@ public class BrokerController {
         this.transactionalMessageCheckService = new TransactionalMessageCheckService(this);
     }
 
+    /**
+     * 注册处理器信息
+     */
     public void registerProcessor() {
         /**
          * SendMessageProcessor

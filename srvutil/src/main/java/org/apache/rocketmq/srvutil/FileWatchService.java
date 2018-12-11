@@ -33,13 +33,16 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 
+/**
+ * 用于监控TLS相关文件的变更，实现热更新
+ */
 public class FileWatchService extends ServiceThread {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
     private final List<String> watchFiles;
     private final List<String> fileCurrentHash;
     private final Listener listener;
-    private static final int WATCH_INTERVAL = 500;
+    private static final int WATCH_INTERVAL = 500; //ms
     private MessageDigest md = MessageDigest.getInstance("MD5");
 
     public FileWatchService(final String[] watchFiles,
@@ -61,6 +64,7 @@ public class FileWatchService extends ServiceThread {
         return "FileWatchService";
     }
 
+    // 500ms检测一次ssl文件是否修改
     @Override
     public void run() {
         log.info(this.getServiceName() + " service started");

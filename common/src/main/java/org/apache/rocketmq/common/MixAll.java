@@ -44,6 +44,10 @@ import org.apache.rocketmq.common.help.FAQUrl;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 
+/**
+ * 工具类
+ * 不同类型topic名称构建，属性，字符串，文件等转换
+ */
 public class MixAll {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
@@ -52,6 +56,9 @@ public class MixAll {
     public static final String NAMESRV_ADDR_ENV = "NAMESRV_ADDR";
     public static final String NAMESRV_ADDR_PROPERTY = "rocketmq.namesrv.addr";
     public static final String MESSAGE_COMPRESS_LEVEL = "rocketmq.message.compressLevel";
+    /**
+     * 默认查询nameServer地址的服务域名
+     */
     public static final String DEFAULT_NAMESRV_ADDR_LOOKUP = "jmenv.tbsite.net";
     public static final String WS_DOMAIN_NAME = System.getProperty("rocketmq.namesrv.domain", DEFAULT_NAMESRV_ADDR_LOOKUP);
     public static final String WS_DOMAIN_SUBGROUP = System.getProperty("rocketmq.namesrv.domain.subgroup", "nsaddr");
@@ -89,10 +96,24 @@ public class MixAll {
     public static final String DEFAULT_TRACE_REGION_ID = "DefaultRegion";
     public static final String CONSUME_CONTEXT_TYPE = "ConsumeContextType";
 
+    /**
+     * 用于接收事务prepare消息的topic
+     */
     public static final String RMQ_SYS_TRANS_HALF_TOPIC = "RMQ_SYS_TRANS_HALF_TOPIC";
+    /**
+     * 用于接受producer端事务commit或rollback消息的topic
+     */
     public static final String RMQ_SYS_TRANS_OP_HALF_TOPIC = "RMQ_SYS_TRANS_OP_HALF_TOPIC";
+    /**
+     * 事务consume group
+     * ----事务topic的内部topicName的后缀（内部topic名称与producer端使用的名称不一致）----删除
+     */
     public static final String CID_SYS_RMQ_TRANS = "CID_RMQ_SYS_TRANS";
 
+    /**
+     * 获取查询NameServer地址的服务域名
+     * @return
+     */
     public static String getWSAddr() {
         String wsDomainName = System.getProperty("rocketmq.namesrv.domain", DEFAULT_NAMESRV_ADDR_LOOKUP);
         String wsDomainSubgroup = System.getProperty("rocketmq.namesrv.domain.subgroup", "nsaddr");
@@ -142,6 +163,12 @@ public class MixAll {
         return 0;
     }
 
+    /**
+     * str存储为文件，并备份已存在的同名文件
+     * @param str
+     * @param fileName
+     * @throws IOException
+     */
     public static void string2File(final String str, final String fileName) throws IOException {
 
         String tmpFile = fileName + ".tmp";

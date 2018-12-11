@@ -19,13 +19,23 @@ package org.apache.rocketmq.common.subscription;
 
 import org.apache.rocketmq.common.MixAll;
 
+/**
+ * 分组订阅配置
+ */
 public class SubscriptionGroupConfig {
 
     private String groupName;
 
+    /**
+     * 是否允许消费
+     */
     private boolean consumeEnable = true;
+
     private boolean consumeFromMinEnable = true;
 
+    /**
+     * 开启广播消费（所有订阅统一topic的消费者都会收到消息）
+     */
     private boolean consumeBroadcastEnable = true;
 
     private int retryQueueNums = 1;

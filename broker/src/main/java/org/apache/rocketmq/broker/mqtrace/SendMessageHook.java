@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.broker.mqtrace;
 
+/**
+ * 发送消息回调接口
+ */
 public interface SendMessageHook {
     public String hookName();
 

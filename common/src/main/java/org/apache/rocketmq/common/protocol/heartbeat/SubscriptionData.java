@@ -26,6 +26,9 @@ import org.apache.rocketmq.common.filter.ExpressionType;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * 消费者订阅信息(过滤表达式, tag等)
+ */
 public class SubscriptionData implements Comparable<SubscriptionData> {
     public final static String SUB_ALL = "*";
     private boolean classFilterMode = false;

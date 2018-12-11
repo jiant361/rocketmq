@@ -31,11 +31,18 @@ import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.common.subscription.SubscriptionGroupConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 分组订阅配置管理器
+ */
 public class SubscriptionGroupManager extends ConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
+    /**
+     * 分组订阅配置信息  topicName-->config
+     */
     private final ConcurrentMap<String, SubscriptionGroupConfig> subscriptionGroupTable =
         new ConcurrentHashMap<String, SubscriptionGroupConfig>(1024);
+
     private final DataVersion dataVersion = new DataVersion();
     private transient BrokerController brokerController;
 
@@ -48,6 +55,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         this.init();
     }
 
+    // TODO 此处默认的订阅组的作用？？？
     private void init() {
         {
             SubscriptionGroupConfig subscriptionGroupConfig = new SubscriptionGroupConfig();
@@ -109,6 +117,10 @@ public class SubscriptionGroupManager extends ConfigManager {
         this.persist();
     }
 
+    /**
+     * 禁止当前broker提供消费服务
+     * @param groupName
+     */
     public void disableConsume(final String groupName) {
         SubscriptionGroupConfig old = this.subscriptionGroupTable.get(groupName);
         if (old != null) {
@@ -117,6 +129,11 @@ public class SubscriptionGroupManager extends ConfigManager {
         }
     }
 
+    /**
+     * 查询指定订阅组配置信息
+     * @param group
+     * @return
+     */
     public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) {
         SubscriptionGroupConfig subscriptionGroupConfig = this.subscriptionGroupTable.get(group);
         if (null == subscriptionGroupConfig) {
@@ -146,6 +163,10 @@ public class SubscriptionGroupManager extends ConfigManager {
             .getStorePathRootDir());
     }
 
+    /**
+     * 对加载配置文件进行反序列化
+     * @param jsonString
+     */
     @Override
     public void decode(String jsonString) {
         if (jsonString != null) {
@@ -162,6 +183,10 @@ public class SubscriptionGroupManager extends ConfigManager {
         return RemotingSerializable.toJson(this, prettyFormat);
     }
 
+    /**
+     * 输出订阅组配置信息
+     * @param sgm
+     */
     private void printLoadDataWhenFirstBoot(final SubscriptionGroupManager sgm) {
         Iterator<Entry<String, SubscriptionGroupConfig>> it = sgm.getSubscriptionGroupTable().entrySet().iterator();
         while (it.hasNext()) {
@@ -178,6 +203,10 @@ public class SubscriptionGroupManager extends ConfigManager {
         return dataVersion;
     }
 
+    /**
+     * 删除订阅组信息
+     * @param groupName
+     */
     public void deleteSubscriptionGroupConfig(final String groupName) {
         SubscriptionGroupConfig old = this.subscriptionGroupTable.remove(groupName);
         if (old != null) {

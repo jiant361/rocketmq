@@ -28,6 +28,9 @@ import org.apache.rocketmq.common.protocol.body.SubscriptionGroupWrapper;
 import org.apache.rocketmq.common.protocol.body.TopicConfigSerializeWrapper;
 import org.apache.rocketmq.store.config.StorePathConfigHelper;
 
+/**
+ * slaver同步master信息(配置，offset信息)
+ */
 public class SlaveSynchronize {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
@@ -52,6 +55,9 @@ public class SlaveSynchronize {
         this.syncSubscriptionGroupConfig();
     }
 
+    /**
+     * 同步主题配置
+     */
     private void syncTopicConfig() {
         String masterAddrBak = this.masterAddr;
         if (masterAddrBak != null) {
@@ -76,6 +82,9 @@ public class SlaveSynchronize {
         }
     }
 
+    /**
+     * 同步消费offset
+     */
     private void syncConsumerOffset() {
         String masterAddrBak = this.masterAddr;
         if (masterAddrBak != null) {
@@ -92,6 +101,9 @@ public class SlaveSynchronize {
         }
     }
 
+    /**
+     * 同步延时主题（消息？ TODO）offset
+     */
     private void syncDelayOffset() {
         String masterAddrBak = this.masterAddr;
         if (masterAddrBak != null) {
@@ -100,6 +112,7 @@ public class SlaveSynchronize {
                     this.brokerController.getBrokerOuterAPI().getAllDelayOffset(masterAddrBak);
                 if (delayOffset != null) {
 
+                    // **保存延时offset到文件
                     String fileName =
                         StorePathConfigHelper.getDelayOffsetStorePath(this.brokerController
                             .getMessageStoreConfig().getStorePathRootDir());
@@ -116,6 +129,9 @@ public class SlaveSynchronize {
         }
     }
 
+    /**
+     * 同步订阅组信息
+     */
     private void syncSubscriptionGroupConfig() {
         String masterAddrBak = this.masterAddr;
         if (masterAddrBak != null) {

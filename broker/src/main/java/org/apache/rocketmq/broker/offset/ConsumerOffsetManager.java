@@ -33,11 +33,14 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 内存offset管理器
+ */
 public class ConsumerOffsetManager extends ConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final String TOPIC_GROUP_SEPARATOR = "@";
 
-    private ConcurrentMap<String/* topic@group */, ConcurrentMap<Integer, Long>> offsetTable =
+    private ConcurrentMap<String/* topic@group */, ConcurrentMap<Integer, Long>/*queueId-->offset*/> offsetTable =
         new ConcurrentHashMap<String, ConcurrentMap<Integer, Long>>(512);
 
     private transient BrokerController brokerController;
@@ -49,6 +52,9 @@ public class ConsumerOffsetManager extends ConfigManager {
         this.brokerController = brokerController;
     }
 
+    /**
+     * 扫描取消订阅topic-group信息，并删除相关offset信息
+     */
     public void scanUnsubscribedTopic() {
         Iterator<Entry<String, ConcurrentMap<Integer, Long>>> it = this.offsetTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -59,6 +65,7 @@ public class ConsumerOffsetManager extends ConfigManager {
                 String topic = arrays[0];
                 String group = arrays[1];
 
+                // 不存在订阅信息，或者 内存维护的commit offset已经持久化，则删除相关offset信息
                 if (null == brokerController.getConsumerManager().findSubscriptionData(group, topic)
                     && this.offsetBehindMuchThanData(topic, next.getValue())) {
                     it.remove();
@@ -68,6 +75,12 @@ public class ConsumerOffsetManager extends ConfigManager {
         }
     }
 
+    /**
+     * 内存维护的commit offset已经持久化
+     * @param topic
+     * @param table
+     * @return
+     */
     private boolean offsetBehindMuchThanData(final String topic, ConcurrentMap<Integer, Long> table) {
         Iterator<Entry<Integer, Long>> it = table.entrySet().iterator();
         boolean result = !table.isEmpty();
@@ -82,6 +95,11 @@ public class ConsumerOffsetManager extends ConfigManager {
         return result;
     }
 
+    /**
+     * 根据group查询订阅的topic
+     * @param group
+     * @return
+     */
     public Set<String> whichTopicByConsumer(final String group) {
         Set<String> topics = new HashSet<String>();
 
@@ -100,6 +118,11 @@ public class ConsumerOffsetManager extends ConfigManager {
         return topics;
     }
 
+    /**
+     * 根据topic查询订阅的group信息
+     * @param topic
+     * @return
+     */
     public Set<String> whichGroupByTopic(final String topic) {
         Set<String> groups = new HashSet<String>();
 
@@ -118,6 +141,14 @@ public class ConsumerOffsetManager extends ConfigManager {
         return groups;
     }
 
+    /**
+     * 提交内存offset信息
+     * @param clientHost 仅用于日志输出
+     * @param group
+     * @param topic
+     * @param queueId
+     * @param offset
+     */
     public void commitOffset(final String clientHost, final String group, final String topic, final int queueId,
         final long offset) {
         // topic@group
@@ -219,6 +250,12 @@ public class ConsumerOffsetManager extends ConfigManager {
         return queueMinOffset;
     }
 
+    /**
+     * 查询offset信息
+     * @param group
+     * @param topic
+     * @return
+     */
     public Map<Integer, Long> queryOffset(final String group, final String topic) {
         // topic@group
         String key = topic + TOPIC_GROUP_SEPARATOR + group;

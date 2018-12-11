@@ -67,6 +67,7 @@ public class BrokerFastFailure {
     }
 
     private void cleanExpiredRequest() {
+        // 发送队列线程池繁忙则立即失败
         while (this.brokerController.getMessageStore().isOSPageCacheBusy()) {
             try {
                 if (!this.brokerController.getSendThreadPoolQueue().isEmpty()) {
@@ -84,6 +85,7 @@ public class BrokerFastFailure {
             }
         }
 
+        // 剔除超时任务
         cleanExpiredRequestInQueue(this.brokerController.getSendThreadPoolQueue(),
             this.brokerController.getBrokerConfig().getWaitTimeMillsInSendQueue());
 
@@ -97,6 +99,11 @@ public class BrokerFastFailure {
             .brokerController.getBrokerConfig().getWaitTimeMillsInTransactionQueue());
     }
 
+    /**
+     * 清除超时请求
+     * @param blockingQueue
+     * @param maxWaitTimeMillsInQueue
+     */
     void cleanExpiredRequestInQueue(final BlockingQueue<Runnable> blockingQueue, final long maxWaitTimeMillsInQueue) {
         while (true) {
             try {
@@ -110,6 +117,7 @@ public class BrokerFastFailure {
                         break;
                     }
 
+                    // **超时判断，并踢出请求
                     final long behind = System.currentTimeMillis() - rt.getCreateTimestamp();
                     if (behind >= maxWaitTimeMillsInQueue) {
                         if (blockingQueue.remove(runnable)) {

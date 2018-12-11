@@ -27,6 +27,9 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * consumer rebalance 或者 消费消息时 需获取group@consumerQueue 的锁
+ */
 public class RebalanceLockManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.REBALANCE_LOCK_LOGGER_NAME);
     private final static long REBALANCE_LOCK_MAX_LIVE_TIME = Long.parseLong(System.getProperty(
@@ -35,6 +38,13 @@ public class RebalanceLockManager {
     private final ConcurrentMap<String/* group */, ConcurrentHashMap<MessageQueue, LockEntry>> mqLockTable =
         new ConcurrentHashMap<String, ConcurrentHashMap<MessageQueue, LockEntry>>(1024);
 
+    /**
+     * 获取 group， mq 的锁
+     * @param group
+     * @param mq
+     * @param clientId
+     * @return
+     */
     public boolean tryLock(final String group, final MessageQueue mq, final String clientId) {
 
         if (!this.isLocked(group, mq, clientId)) {
@@ -114,6 +124,13 @@ public class RebalanceLockManager {
         return false;
     }
 
+    /**
+     * 获取group的多个consumerQueue的锁
+     * @param group
+     * @param mqs
+     * @param clientId
+     * @return
+     */
     public Set<MessageQueue> tryLockBatch(final String group, final Set<MessageQueue> mqs,
         final String clientId) {
         Set<MessageQueue> lockedMqs = new HashSet<MessageQueue>(mqs.size());

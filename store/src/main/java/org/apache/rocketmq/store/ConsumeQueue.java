@@ -24,9 +24,16 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.store.config.StorePathConfigHelper;
 
+/**
+ * 消费者队列:存储消息位置信息（20byte）-->offset(8B),size(4B),tagsCode(8B)
+ * 为MappedFileQueue 的封装
+ */
 public class ConsumeQueue {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /**
+     * 存储在MappedFile中的大小单位为20Byte
+     */
     public static final int CQ_STORE_UNIT_SIZE = 20;
     private static final InternalLogger LOG_ERROR = InternalLoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
 
@@ -482,6 +489,11 @@ public class ConsumeQueue {
         }
     }
 
+    /**
+     * 根据index，获取起始offset读取消息
+     * @param startIndex 位置信息的index），即第几个位置信息
+     * @return
+     */
     public SelectMappedBufferResult getIndexBuffer(final long startIndex) {
         int mappedFileSize = this.mappedFileSize;
         long offset = startIndex * CQ_STORE_UNIT_SIZE;

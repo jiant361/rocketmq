@@ -39,6 +39,7 @@ public interface TransactionalMessageService {
     boolean deletePrepareMessage(MessageExt messageExt);
 
     /**
+     * 仅用于查询消息，真正提交操作通过deletePrepareMessage完成
      * Invoked to process commit prepare message.
      *
      * @param requestHeader Commit message request header.
@@ -47,6 +48,7 @@ public interface TransactionalMessageService {
     OperationResult commitMessage(EndTransactionRequestHeader requestHeader);
 
     /**
+     * 仅用于查询消息，真正提交操作通过deletePrepareMessage完成
      * Invoked to roll back prepare message.
      *
      * @param requestHeader Prepare message request header.
