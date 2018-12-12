@@ -25,7 +25,7 @@ public class QueueData implements Comparable<QueueData> {
     private int readQueueNums; // 读队列数量
     private int writeQueueNums;// 写队列数量
     private int perm;// 读写权限
-    private int topicSynFlag;// 同步复制还是异步复制标记
+    private int topicSynFlag;
 
     public int getReadQueueNums() {
         return readQueueNums;
