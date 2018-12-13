@@ -50,9 +50,9 @@ public class ProcessQueue {
     // 当queue重新分配给新的实例的时候，新的实例从broker上拿到的消费进度还是维持在2101，这时候就会又从2101开始消费，2102-2200这批消息实际上已经被消费过还是会投递一次。
     //对于这个场景，业务必须要保证消息消费的幂等性，这也是RocketMQ官方多次强调的态度。
     private final TreeMap<Long, MessageExt> msgTreeMap = new TreeMap<Long, MessageExt>();
-    //目前已消费消息的总个数，拉取成功时更新该字段
+    //目前正在处理中的消费消息的总个数，拉取成功时更新该字段
     private final AtomicLong msgCount = new AtomicLong();
-    //目前已消费消息总大小
+    //目前正在处理中的消费消息总大小
     private final AtomicLong msgSize = new AtomicLong();
     //真正消费 消息队列时的锁
     private final Lock lockConsume = new ReentrantLock();
