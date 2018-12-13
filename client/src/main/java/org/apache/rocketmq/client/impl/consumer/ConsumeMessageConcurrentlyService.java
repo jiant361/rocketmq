@@ -272,6 +272,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
         switch (status) {
             //消费成功
             case CONSUME_SUCCESS:
+                //当且仅当此回调函数返回ConsumeConcurrentlyStatus.CONSUME_SUCCESS，RocketMQ才会认为这批消息（默认是1条）是消费完成的
                 if (ackIndex >= consumeRequest.getMsgs().size()) {
                     ackIndex = consumeRequest.getMsgs().size() - 1;
                 }
