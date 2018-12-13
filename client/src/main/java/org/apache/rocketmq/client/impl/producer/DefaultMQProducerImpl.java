@@ -201,7 +201,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         }
         //立即调用MQClientInstance.sendHeartbeatToAllBrokerWithLock()方法，在该方法中，
         // 第一，向所有在MQClientInstance.brokerAddrTable列表中的Broker发送心跳消息；
-        // 第二，向Filter过滤服务器发送REGISTER_MESSAGE_FILTER_CLASS请求码，更新过滤服务器中的Filterclass文件：用于服务器端过滤消息
+        // 第二，push模式下，向Filter过滤服务器发送REGISTER_MESSAGE_FILTER_CLASS请求码，更新过滤服务器中的Filterclass文件：用于服务器端过滤消息
         this.mQClientFactory.sendHeartbeatToAllBrokerWithLock();
     }
 
