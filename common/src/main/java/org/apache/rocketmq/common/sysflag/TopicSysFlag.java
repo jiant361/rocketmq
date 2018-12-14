@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.common.sysflag;
 
+/**
+ * 这玩意目前没看到有谁使用，具体什么作用 TODO
+ */
 public class TopicSysFlag {
 
     private final static int FLAG_UNIT = 0x1 << 0;

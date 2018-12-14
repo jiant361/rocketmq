@@ -31,6 +31,9 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 
+/**
+ * 远程通信命令，包装请求/响应
+ */
 public class RemotingCommand {
     public static final String SERIALIZE_TYPE_PROPERTY = "rocketmq.serialize.type";
     public static final String SERIALIZE_TYPE_ENV = "ROCKETMQ_SERIALIZE_TYPE";
@@ -69,12 +72,14 @@ public class RemotingCommand {
         }
     }
 
-    private int code;
+    private int code; // 请求码/响应码
     private LanguageCode language = LanguageCode.JAVA;
     private int version = 0;
     private int opaque = requestId.getAndIncrement();
     private int flag = 0;
     private String remark;
+
+    // 业务请求/响应信息
     private HashMap<String, String> extFields;
     private transient CommandCustomHeader customHeader;
 
@@ -231,6 +236,12 @@ public class RemotingCommand {
         this.customHeader = customHeader;
     }
 
+    /**
+     * 解析extFields为指定业务对象
+     * @param classHeader
+     * @return
+     * @throws RemotingCommandException
+     */
     public CommandCustomHeader decodeCommandCustomHeader(
         Class<? extends CommandCustomHeader> classHeader) throws RemotingCommandException {
         CommandCustomHeader objectHeader;

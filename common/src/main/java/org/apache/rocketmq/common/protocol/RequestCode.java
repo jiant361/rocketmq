@@ -17,6 +17,9 @@
 
 package org.apache.rocketmq.common.protocol;
 
+/**
+ * 请求码
+ */
 public class RequestCode {
 
     public static final int SEND_MESSAGE = 10;
@@ -48,11 +51,11 @@ public class RequestCode {
 
     public static final int VIEW_MESSAGE_BY_ID = 33;
 
-    public static final int HEART_BEAT = 34;
+    public static final int HEART_BEAT = 34; //心跳消息
 
     public static final int UNREGISTER_CLIENT = 35;
 
-    public static final int CONSUMER_SEND_MSG_BACK = 36;
+    public static final int CONSUMER_SEND_MSG_BACK = 36; //消费失败的消息写入延迟消息队列中
 
     public static final int END_TRANSACTION = 37;
     public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
@@ -169,5 +172,8 @@ public class RequestCode {
 
     public static final int QUERY_CONSUME_QUEUE = 321;
 
+    /**
+     * broker定时查询nameServer中TopicConfig 消息版本
+     */
     public static final int QUERY_DATA_VERSION = 322;
 }

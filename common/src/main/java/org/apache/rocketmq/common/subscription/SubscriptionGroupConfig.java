@@ -34,16 +34,19 @@ public class SubscriptionGroupConfig {
     private boolean consumeFromMinEnable = true;
 
     /**
-     * 开启广播消费（所有订阅统一topic的消费者都会收到消息）
+     * 开启广播消费（所有订阅同一topic的消费者都会收到消息）
      */
     private boolean consumeBroadcastEnable = true;
 
-    private int retryQueueNums = 1;
+    private int retryQueueNums = 1; //消息重试（重新拉取）队列数
 
-    private int retryMaxTimes = 16;
+    private int retryMaxTimes = 16; //最大重试次数
 
     private long brokerId = MixAll.MASTER_ID;
 
+    /**
+     * 默认slaver 节点id, 用于从master切换到slaver读取
+     */
     private long whichBrokerWhenConsumeSlowly = 1;
 
     private boolean notifyConsumerIdsChangedEnable = true;

@@ -80,6 +80,9 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
     /**
      * Number of queues to create per default topic.
+     * 自动创建topic时，queueNume谁小使用谁
+     * org.apache.rocketmq.common.TopicConfig#getWriteQueueNums()
+     * 参看 org.apache.rocketmq.broker.topic.TopicConfigManager#createTopicInSendMessageMethod(java.lang.String, java.lang.String, java.lang.String, int, int)
      */
     private volatile int defaultTopicQueueNums = 4;
 

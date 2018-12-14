@@ -39,10 +39,10 @@ public interface MQAdmin {
     /**
      * Creates an topic
      *
-     * @param key accesskey
+     * @param key accesskey 通常为clusterName
      * @param newTopic topic name
      * @param queueNum topic's queue number
-     * @param topicSysFlag topic system flag
+     * @param topicSysFlag topic system flag 参见TopicSysFlag
      */
     void createTopic(String key, String newTopic, int queueNum, int topicSysFlag)
         throws MQClientException;

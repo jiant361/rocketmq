@@ -33,6 +33,9 @@ import org.apache.rocketmq.store.DefaultMessageStore;
 import org.apache.rocketmq.store.DispatchRequest;
 import org.apache.rocketmq.store.config.StorePathConfigHelper;
 
+/**
+ * 索引服务
+ */
 public class IndexService {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     /**
@@ -154,6 +157,15 @@ public class IndexService {
         }
     }
 
+    /**
+     * 查询索引信息
+     * @param topic
+     * @param key
+     * @param maxNum
+     * @param begin
+     * @param end
+     * @return
+     */
     public QueryOffsetResult queryOffset(String topic, String key, int maxNum, long begin, long end) {
         List<Long> phyOffsets = new ArrayList<Long>(maxNum);
 
@@ -198,7 +210,12 @@ public class IndexService {
         return topic + "#" + key;
     }
 
+    /**
+     * 构建添加索引
+     * @param req
+     */
     public void buildIndex(DispatchRequest req) {
+        // 获取或创建索引文件
         IndexFile indexFile = retryGetAndCreateIndexFile();
         if (indexFile != null) {
             long endPhyOffset = indexFile.getEndPhyOffset();
@@ -344,6 +361,10 @@ public class IndexService {
         return indexFile;
     }
 
+    /**
+     * 刷新磁盘
+     * @param f
+     */
     public void flush(final IndexFile f) {
         if (null == f)
             return;

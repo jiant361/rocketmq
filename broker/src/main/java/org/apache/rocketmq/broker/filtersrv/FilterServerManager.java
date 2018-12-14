@@ -71,7 +71,7 @@ public class FilterServerManager {
     }
 
     /**
-     * 检查需要启动的filterServer 实例数，并进行启动
+     * 检查需要启动的filterServer 实例数(默认值为0，该功能即broker端过滤功能，已废弃)，并进行启动
      */
     public void createFilterServer() {
         int more =

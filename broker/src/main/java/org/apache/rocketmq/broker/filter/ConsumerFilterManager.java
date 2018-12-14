@@ -155,6 +155,7 @@ public class ConsumerFilterManager extends ConfigManager {
             filterDataMapByTopic = prev != null ? prev : temp;
         }
 
+        // 生成布隆过滤表达式
         BloomFilterData bloomFilterData = bloomFilter.generate(consumerGroup + "#" + topic);
 
         return filterDataMapByTopic.register(consumerGroup, expression, type, bloomFilterData, clientVersion);
@@ -373,6 +374,7 @@ public class ConsumerFilterManager extends ConfigManager {
             ConsumerFilterData old = this.groupFilterData.get(consumerGroup);
 
             if (old == null) {
+                // 生成过滤表达式数据
                 ConsumerFilterData consumerFilterData = build(topic, consumerGroup, expression, type, clientVersion);
                 if (consumerFilterData == null) {
                     return false;

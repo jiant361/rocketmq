@@ -40,6 +40,9 @@ import org.apache.rocketmq.remoting.common.RemotingUtil;
 import org.apache.rocketmq.store.CommitLog;
 import org.apache.rocketmq.store.DefaultMessageStore;
 
+/**
+ * HA service 用于主从同步
+ */
 public class HAService {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
@@ -47,6 +50,7 @@ public class HAService {
 
     private final List<HAConnection> connectionList = new LinkedList<>();
 
+    //监听slaver发送的连接请求
     private final AcceptSocketService acceptSocketService;
 
     private final DefaultMessageStore defaultMessageStore;
@@ -54,6 +58,7 @@ public class HAService {
     private final WaitNotifyObject waitNotifyObject = new WaitNotifyObject();
     private final AtomicLong push2SlaveMaxOffset = new AtomicLong(0);
 
+    // 用于检测消息同步是否成功
     private final GroupTransferService groupTransferService;
 
     private final HAClient haClient;
@@ -248,6 +253,7 @@ public class HAService {
     }
 
     /**
+     * 用于检测消息同步是否成功，成功则修改request的信号量
      * GroupTransferService Service
      */
     class GroupTransferService extends ServiceThread {
@@ -279,6 +285,8 @@ public class HAService {
             synchronized (this.requestsRead) {
                 if (!this.requestsRead.isEmpty()) {
                     for (CommitLog.GroupCommitRequest req : this.requestsRead) {
+
+                        // 检测是否同步成功
                         boolean transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
                         for (int i = 0; !transferOK && i < 5; i++) {
                             this.notifyTransferObject.waitForRunning(1000);
@@ -589,6 +597,7 @@ public class HAService {
 
             while (!this.isStopped()) {
                 try {
+                    // 本节点为从节点时发起连接
                     if (this.connectMaster()) {
 
                         // **定时上报master当前slave已经同步的commitLog的位置

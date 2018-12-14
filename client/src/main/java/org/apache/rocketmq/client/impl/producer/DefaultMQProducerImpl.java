@@ -681,7 +681,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             //调用MQClientInstance.updateTopicRouteInfoFromNameServer (String topic, boolean isDefault, DefaultMQProducer defaultMQProducer)方法
             // 获取默认topic值"TBW102"的TopicPublishInfo对象，其中isDefault=true，defaultMQProducer等于自身的defaultMQProducer对象，
             // 在第一次向NameServer获取该topic的TopicPublishInfo对象时会出现此情况。若Broker开启了自动创建Topic功能，
-            // 则在启动Broker时会自动创建TBW102的主题，不建议开启此功能，而应该采用手工创建的方式创建TOPIC；
+            // 会基于defaultTopic（TBW102）的配置信息创建自定义的topic，不建议开启此功能，而应该采用手工创建的方式创建TOPIC；
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic, true, this.defaultMQProducer);
             topicPublishInfo = this.topicPublishInfoTable.get(topic);
             return topicPublishInfo;

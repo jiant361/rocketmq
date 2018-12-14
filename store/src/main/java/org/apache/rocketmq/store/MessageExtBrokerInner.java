@@ -20,7 +20,7 @@ import org.apache.rocketmq.common.TopicFilterType;
 import org.apache.rocketmq.common.message.MessageExt;
 
 /**
- * 事务消息（内部消息封装）
+ * broker内部消息对象
  */
 public class MessageExtBrokerInner extends MessageExt {
     private static final long serialVersionUID = 7256001576878700634L;

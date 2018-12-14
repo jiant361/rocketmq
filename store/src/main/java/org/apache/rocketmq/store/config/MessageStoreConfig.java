@@ -20,6 +20,9 @@ import java.io.File;
 import org.apache.rocketmq.common.annotation.ImportantField;
 import org.apache.rocketmq.store.ConsumeQueue;
 
+/**
+ * 默认存储配置
+ */
 public class MessageStoreConfig {
     //The root directory in which the log data is kept
     @ImportantField
@@ -34,6 +37,8 @@ public class MessageStoreConfig {
     private int mapedFileSizeCommitLog = 1024 * 1024 * 1024;
     // ConsumeQueue file size,default is 30W
     private int mapedFileSizeConsumeQueue = 300000 * ConsumeQueue.CQ_STORE_UNIT_SIZE;
+
+    // consume queue ext用于存储不太重要的ConsumeQueue信息，如message store time, filter bit map and etc.
     // enable consume queue ext
     private boolean enableConsumeQueueExt = false;
     // ConsumeQueue extend file size, 48M
@@ -53,6 +58,7 @@ public class MessageStoreConfig {
     private int commitIntervalCommitLog = 200;
 
     /**
+     * spin lock: cpu轮询锁
      * introduced since 4.0.x. Determine whether to use mutex reentrantLock when putting message.<br/>
      * By default it is set to false indicating using spin lock when putting message.
      */
@@ -63,7 +69,7 @@ public class MessageStoreConfig {
     private boolean flushCommitLogTimed = false;
     // ConsumeQueue flush interval
     private int flushIntervalConsumeQueue = 1000;
-    // Resource reclaim interval
+    // Resource reclaim interval 资源回收
     private int cleanResourceInterval = 10000;
     // CommitLog removal interval
     private int deleteCommitLogFilesInterval = 100;
@@ -105,6 +111,9 @@ public class MessageStoreConfig {
     private int maxTransferBytesOnMessageInDisk = 1024 * 64;
     @ImportantField
     private int maxTransferCountOnMessageInDisk = 8;
+    /**
+     * 消息占物理内存比例
+     */
     @ImportantField
     private int accessMessageInMemoryMaxRatio = 40;
     @ImportantField
@@ -137,7 +146,7 @@ public class MessageStoreConfig {
     private boolean offsetCheckInSlave = false;
     private boolean debugLockEnable = false;
     private boolean duplicationEnable = false;
-    private boolean diskFallRecorded = true;
+    private boolean diskFallRecorded = true; // 是否记录（最大消息offset-已拉取消息的offset）
     private long osPageCacheBusyTimeOutMills = 1000;
     private int defaultQueryMaxNum = 32;
 

@@ -33,7 +33,7 @@ public class DispatchRequest {
     private final int sysFlag;
     private final long preparedTransactionOffset;
     private final Map<String, String> propertiesMap;
-    private byte[] bitMap;
+    private byte[] bitMap; //用于consumerGroup + "#" + topic  过滤
 
     public DispatchRequest(
         final String topic,

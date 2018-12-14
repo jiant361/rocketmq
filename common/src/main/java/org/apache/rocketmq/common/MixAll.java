@@ -64,7 +64,12 @@ public class MixAll {
     public static final String WS_DOMAIN_SUBGROUP = System.getProperty("rocketmq.namesrv.domain.subgroup", "nsaddr");
     //http://jmenv.tbsite.net:8080/rocketmq/nsaddr
     //public static final String WS_ADDR = "http://" + WS_DOMAIN_NAME + ":8080/rocketmq/" + WS_DOMAIN_SUBGROUP;
-    public static final String AUTO_CREATE_TOPIC_KEY_TOPIC = "TBW102"; // Will be created at broker when isAutoCreateTopicEnable
+
+    // Will be created at broker when isAutoCreateTopicEnable
+    // 当broker端开启isAutoCreateTopicEnable后，会自动创建TBW102相关的queue信息，客户端发送topic时，如果
+    //该topic还未创建，会通过TBW102相关的brokerAddr信息，发送消息，并在broker端基于TBW102的topicConfig配置创建topic
+    // 参见 org.apache.rocketmq.broker.topic.TopicConfigManager.createTopicInSendMessageMethod()
+    public static final String AUTO_CREATE_TOPIC_KEY_TOPIC = "TBW102";
     public static final String BENCHMARK_TOPIC = "BenchmarkTest";
     public static final String DEFAULT_PRODUCER_GROUP = "DEFAULT_PRODUCER";
     public static final String DEFAULT_CONSUMER_GROUP = "DEFAULT_CONSUMER";
@@ -85,6 +90,9 @@ public class MixAll {
     public static final List<String> LOCAL_INET_ADDRESS = getLocalInetAddress();
     public static final String LOCALHOST = localhost();
     public static final String DEFAULT_CHARSET = "UTF-8";
+    /**
+     * 默认master ID 为0，故id不能随意写
+     */
     public static final long MASTER_ID = 0L;
     public static final long CURRENT_JVM_PID = getPID();
 

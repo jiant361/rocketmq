@@ -308,6 +308,7 @@ public class MappedFileQueue {
     public long getMaxOffset() {
         MappedFile mappedFile = getLastMappedFile();
         if (mappedFile != null) {
+            // 全局offset
             return mappedFile.getFileFromOffset() + mappedFile.getReadPosition();
         }
         return 0;

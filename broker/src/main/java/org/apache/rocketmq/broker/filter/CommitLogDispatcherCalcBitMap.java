@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
+ * 异步存储consumerQueue相关信息前，计算设置bloom值
  * Calculate bit map of filter.
  */
 public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
@@ -51,8 +52,8 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
 
         try {
 
+            // 获取过滤信息
             Collection<ConsumerFilterData> filterDatas = consumerFilterManager.get(request.getTopic());
-
             if (filterDatas == null || filterDatas.isEmpty()) {
                 return;
             }
@@ -87,7 +88,7 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
 
                 log.debug("Result of Calc bit map:ret={}, data={}, props={}, offset={}", ret, filterData, request.getPropertiesMap(), request.getCommitLogOffset());
 
-                // eval true
+                // eval true, 计算bitMap
                 if (ret != null && ret instanceof Boolean && (Boolean) ret) {
                     consumerFilterManager.getBloomFilter().hashTo(
                         filterData.getBloomFilterData(),
@@ -96,6 +97,7 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
                 }
             }
 
+            // 设置bitMap数据, 存储在consumeQueueExt
             request.setBitMap(filterBitMap.bytes());
 
             long eclipseTime = System.currentTimeMillis() - startTime;

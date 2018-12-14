@@ -43,6 +43,7 @@ public class ConsumeQueueExt {
     private final String topic;
     private final int queueId;
 
+    // 扩展消息存储路径
     private final String storePath;
     private final int mappedFileSize;
     private ByteBuffer tempContainer;
@@ -405,6 +406,8 @@ public class ConsumeQueueExt {
     }
 
     /**
+     * 消费queue扩展队列存储单元（存储时间，bitMap）
+     * 20Byte
      * Store unit.
      */
     public static class CqExtUnit {
@@ -432,6 +435,7 @@ public class ConsumeQueueExt {
         private short size;
         /**
          * has code of tags
+         * offset地址，可转换为mappedFile的offset
          */
         private long tagsCode;
         /**

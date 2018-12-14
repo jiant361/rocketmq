@@ -22,6 +22,9 @@ import org.apache.rocketmq.logging.InternalLoggerFactory;
 
 import java.util.HashMap;
 
+/**
+ * 用于主从同步时，状态控制
+ */
 public class WaitNotifyObject {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 

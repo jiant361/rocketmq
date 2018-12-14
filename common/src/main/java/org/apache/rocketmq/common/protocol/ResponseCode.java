@@ -19,6 +19,9 @@ package org.apache.rocketmq.common.protocol;
 
 import org.apache.rocketmq.remoting.protocol.RemotingSysResponseCode;
 
+/**
+ * 响应码
+ */
 public class ResponseCode extends RemotingSysResponseCode {
 
     public static final int FLUSH_DISK_TIMEOUT = 10;
@@ -41,7 +44,7 @@ public class ResponseCode extends RemotingSysResponseCode {
 
     public static final int PULL_RETRY_IMMEDIATELY = 20;
 
-    public static final int PULL_OFFSET_MOVED = 21;
+    public static final int PULL_OFFSET_MOVED = 21; //拉消息请求的Offset不合法，太小或太大
 
     public static final int QUERY_NOT_FOUND = 22;
 

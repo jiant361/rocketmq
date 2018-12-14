@@ -242,6 +242,8 @@ public class PullMessageProcessor implements NettyRequestProcessor {
             responseHeader.setMinOffset(getMessageResult.getMinOffset());
             responseHeader.setMaxOffset(getMessageResult.getMaxOffset());
 
+            // 设置了建议从Slave处拉取消息,建议从BrokerId = 1 的Slavea读取消息,
+            // 默认whichBrokerWhenConsumeSlowly = 1
             if (getMessageResult.isSuggestPullingFromSlave()) {
                 responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getWhichBrokerWhenConsumeSlowly());
             } else {
@@ -253,6 +255,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
                 case SYNC_MASTER:
                     break;
                 case SLAVE:
+                    // 若是从Slave拉取消息,默认配置下slaveReadEnable=false,让你下次从Master处读
                     if (!this.brokerController.getBrokerConfig().isSlaveReadEnable()) {
                         response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);
                         responseHeader.setSuggestWhichBrokerId(MixAll.MASTER_ID);
@@ -260,6 +263,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
                     break;
             }
 
+            //默认情形下slaveReadEnable = true,所以会还原之前设置的suggestWhichBrokerId = 1 的赋值
             if (this.brokerController.getBrokerConfig().isSlaveReadEnable()) {
                 // consume too slow ,redirect to another machine
                 if (getMessageResult.isSuggestPullingFromSlave()) {
@@ -270,6 +274,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
                     responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getBrokerId());
                 }
             } else {
+                //当Slave不可读的情况下，还是从Master处读取
                 responseHeader.setSuggestWhichBrokerId(MixAll.MASTER_ID);
             }
 

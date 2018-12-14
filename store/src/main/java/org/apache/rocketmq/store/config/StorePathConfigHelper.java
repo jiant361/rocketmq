@@ -18,16 +18,34 @@ package org.apache.rocketmq.store.config;
 
 import java.io.File;
 
+/**
+ * 文件路径信息
+ */
 public class StorePathConfigHelper {
 
+    /**
+     * 消费队列
+     * @param rootDir
+     * @return
+     */
     public static String getStorePathConsumeQueue(final String rootDir) {
         return rootDir + File.separator + "consumequeue";
     }
 
+    /**
+     * cq扩展信息路径，存储存储时间，bitMap等扩展信息
+     * @param rootDir
+     * @return
+     */
     public static String getStorePathConsumeQueueExt(final String rootDir) {
         return rootDir + File.separator + "consumequeue_ext";
     }
 
+    /**
+     * 索引文件目录
+     * @param rootDir
+     * @return
+     */
     public static String getStorePathIndex(final String rootDir) {
         return rootDir + File.separator + "index";
     }
@@ -36,10 +54,20 @@ public class StorePathConfigHelper {
         return rootDir + File.separator + "checkpoint";
     }
 
+    /**
+     * 通过判断abort文件是否存在，判断是异常关闭还是正常关闭，采取不同的恢复策略
+     * @param rootDir
+     * @return
+     */
     public static String getAbortFile(final String rootDir) {
         return rootDir + File.separator + "abort";
     }
 
+    /**
+     * 防止同一目录启动多个broker实例
+     * @param rootDir
+     * @return
+     */
     public static String getLockFile(final String rootDir) {
         return rootDir + File.separator + "lock";
     }

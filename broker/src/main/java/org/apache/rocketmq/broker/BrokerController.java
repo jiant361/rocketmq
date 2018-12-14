@@ -540,7 +540,7 @@ public class BrokerController {
         this.fastRemotingServer.registerProcessor(RequestCode.VIEW_MESSAGE_BY_ID, queryProcessor, this.queryMessageExecutor);
 
         /**
-         * ClientManageProcessor
+         * ClientManageProcessor 处理
          */
         ClientManageProcessor clientProcessor = new ClientManageProcessor(this);
         this.remotingServer.registerProcessor(RequestCode.HEART_BEAT, clientProcessor, this.heartbeatExecutor);
@@ -832,6 +832,7 @@ public class BrokerController {
 
         this.registerBrokerAll(true, false, true);
 
+        // 每10检测需要是否给nameServer同步topicConfig信息，作为心跳功能
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override

@@ -88,6 +88,7 @@ public class MQAdminImpl {
 
                 StringBuilder orderTopicString = new StringBuilder();
 
+                // 遍历所有broker，分别创建topic
                 for (BrokerData brokerData : brokerDataList) {
                     String addr = brokerData.getBrokerAddrs().get(MixAll.MASTER_ID);
                     if (addr != null) {

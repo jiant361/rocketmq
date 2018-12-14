@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * MQ消息基类
+ * MQ消息基本信息(通常producer 端直接使用)
  */
 public class Message implements Serializable {
     private static final long serialVersionUID = 8445773977080406428L;
