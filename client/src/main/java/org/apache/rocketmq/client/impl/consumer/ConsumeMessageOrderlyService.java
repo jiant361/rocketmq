@@ -273,12 +273,16 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
                     log.warn("the message queue consume result is illegal, we think you want to ack these message {}",
                         consumeRequest.getMessageQueue());
                 case SUCCESS:
+                    //当且仅当此回调函数返回ConsumeConcurrentlyStatus.CONSUME_SUCCESS，RocketMQ才会认为这批消息（默认是1条）是消费完成的
                     // 提交消息已消费成功到消息处理队列
                     commitOffset = consumeRequest.getProcessQueue().commit();
                     // 统计
                     this.getConsumerStatsManager().incConsumeOKTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());
                     break;
-                case SUSPEND_CURRENT_QUEUE_A_MOMENT://消费失败的消息，会挂起队列一会儿，稍后继续消费。
+                case SUSPEND_CURRENT_QUEUE_A_MOMENT:
+                    //消费失败的消息，会挂起队列一会儿，稍后继续消费。使用顺序消费的回调MessageListenerOrderly时，
+                    // 由于顺序消费是要前者消费成功才能继续消费，所以没有RECONSUME_LATER的这个状态，
+                    // 只有SUSPEND_CURRENT_QUEUE_A_MOMENT来暂停队列的其余消费，直到原消息不断重试成功为止才能继续消费。
                     // 统计
                     this.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());
                     if (checkReconsumeTimes(msgs)) {// 计算是否暂时挂起（暂停）消费N毫秒，默认：10ms，

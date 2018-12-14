@@ -77,7 +77,7 @@ public class PullAPIWrapper {
     public PullResult processPullResult(final MessageQueue mq, final PullResult pullResult,
         final SubscriptionData subscriptionData) {
         PullResultExt pullResultExt = (PullResultExt) pullResult;
-
+        //将broker建议从哪个Broker拉取的建议brokerId存入pullFromWhichNodeTable
         // 更新建议拉取的brokerId
         this.updatePullFromWhichNode(mq, pullResultExt.getSuggestWhichBrokerId());
         //获取消息结果为FOUND，即有新消息
@@ -152,7 +152,7 @@ public class PullAPIWrapper {
             }
         }
     }
-
+    //真正的拉取消息
     public PullResult pullKernelImpl(
         final MessageQueue mq,
         final String subExpression,
@@ -167,6 +167,7 @@ public class PullAPIWrapper {
         final CommunicationMode communicationMode,
         final PullCallback pullCallback
     ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+        //优先获取建议的brokerId，如果获取不到，取传入进去的broker的后一个broker
         FindBrokerResult findBrokerResult =
             this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(),
                 this.recalculatePullFromWhichNode(mq), false);
@@ -262,7 +263,7 @@ public class PullAPIWrapper {
         if (this.isConnectBrokerByUser()) {
             return this.defaultBrokerId;
         }
-
+        //优先从建议brokerId获取messagequeue
         AtomicLong suggest = this.pullFromWhichNodeTable.get(mq);
         if (suggest != null) {
             return suggest.get();

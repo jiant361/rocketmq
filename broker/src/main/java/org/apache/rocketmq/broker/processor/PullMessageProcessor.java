@@ -85,7 +85,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
     public boolean rejectRequest() {
         return false;
     }
-
+    //broker端处理拉取消息请求
     private RemotingCommand processRequest(final Channel channel, RemotingCommand request, boolean brokerAllowSuspend)
         throws RemotingCommandException {
         RemotingCommand response = RemotingCommand.createResponseCommand(PullMessageResponseHeader.class);
@@ -262,7 +262,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
                     }
                     break;
             }
-
+             //slave可读的情况下，根据消费情况建议brokerid，否则建议master
             //默认情形下slaveReadEnable = true,所以会还原之前设置的suggestWhichBrokerId = 1 的赋值
             if (this.brokerController.getBrokerConfig().isSlaveReadEnable()) {
                 // consume too slow ,redirect to another machine
@@ -421,6 +421,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
                         int queueId = requestHeader.getQueueId();
                         PullRequest pullRequest = new PullRequest(request, channel, pollingTimeMills,
                             this.brokerController.getMessageStore().now(), offset, subscriptionData, messageFilter);
+                        //未找到对应topic时挂起对应请求
                         this.brokerController.getPullRequestHoldService().suspendPullRequest(topic, queueId, pullRequest);
                         response = null;
                         break;

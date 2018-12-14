@@ -261,6 +261,9 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
         final ConsumeConcurrentlyContext context,
         final ConsumeRequest consumeRequest
     ) {
+        //最后一个正常消费的消息索引号,通过在listener.consumeMessage中context.setAckIndex(n)，可以说明哪个索引号之后的消息消费失败。
+        // 这样从索引ackIndex往后的消息会被重新发送至broker，等待下一次消费。
+        // 然后从ProcessQueue中移除消费过的消息。 最后更新最新的offset至RemoteBrokerOffsetStore。
         int ackIndex = context.getAckIndex();
 
         if (consumeRequest.getMsgs().isEmpty())
@@ -269,6 +272,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
         switch (status) {
             //消费成功
             case CONSUME_SUCCESS:
+                //当且仅当此回调函数返回ConsumeConcurrentlyStatus.CONSUME_SUCCESS，RocketMQ才会认为这批消息（默认是1条）是消费完成的
                 if (ackIndex >= consumeRequest.getMsgs().size()) {
                     ackIndex = consumeRequest.getMsgs().size() - 1;
                 }
@@ -288,7 +292,8 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
 
         switch (this.defaultMQPushConsumer.getMessageModel()) {
             case BROADCASTING:
-                //广播模式下 如果消费失败，直接丢弃
+                // 如果是广播模式，直接丢弃失败消息，需要在文档中告知用户
+                // 这样做的原因：广播模式对于失败重试代价过高，对整个集群性能会有较大影响，失败重试功能交由应用处理
                 for (int i = ackIndex + 1; i < consumeRequest.getMsgs().size(); i++) {
                     MessageExt msg = consumeRequest.getMsgs().get(i);
                     log.warn("BROADCASTING, the message consume failed, drop it, {}", msg.toString());

@@ -18,10 +18,10 @@ package org.apache.rocketmq.common.sysflag;
 
 
 public class PullSysFlag {
-    private final static int FLAG_COMMIT_OFFSET = 0x1 << 0;
-    private final static int FLAG_SUSPEND = 0x1 << 1;
-    private final static int FLAG_SUBSCRIPTION = 0x1 << 2;
-    private final static int FLAG_CLASS_FILTER = 0x1 << 3;
+    private final static int FLAG_COMMIT_OFFSET = 0x1 << 0;//是否提交偏移量，pull模式为false
+    private final static int FLAG_SUSPEND = 0x1 << 1;//如果拉取没有数据时是否需要挂起，
+    private final static int FLAG_SUBSCRIPTION = 0x1 << 2;//是否根据tag过滤，pull模式为true
+    private final static int FLAG_CLASS_FILTER = 0x1 << 3; //是否根据classfilter过滤，pull模式为false
 
     public static int buildSysFlag(final boolean commitOffset, final boolean suspend,
         final boolean subscription, final boolean classFilter) {

@@ -101,7 +101,7 @@ public class RouteInfoManager {
 
         return topicList.encode();
     }
-
+    //注册Broker
     /**
      * 注册broker信息
      * @param clusterName
