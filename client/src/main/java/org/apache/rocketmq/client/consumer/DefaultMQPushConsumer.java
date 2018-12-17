@@ -224,6 +224,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Whether the unit of subscription group
+     * 没看出这玩意什么用 org.apache.rocketmq.common.sysflag.TopicSysFlag TODO
      */
     private boolean unitMode = false;
 

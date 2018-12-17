@@ -131,7 +131,7 @@ public class BrokerOuterAPI {
      * @param brokerId
      * @param haServerAddr
      * @param topicConfigWrapper
-     * @param filterServerList
+     * @param filterServerList filterServer地址
      * @param oneway
      * @param timeoutMills
      * @param compressed

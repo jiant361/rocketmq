@@ -38,6 +38,7 @@ public class ConsumerFilterData {
     private transient Expression compiledExpression;
     private long bornTime;
     private long deadTime = 0;
+    // 存在过滤器的情况下，用于粗略判断 (consumerGroup + "#" + topic) 是否存在
     private BloomFilterData bloomFilterData;
     private long clientVersion;
 

@@ -73,7 +73,7 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
             //接收来自broker的consumer group 运行状态的请求
             case RequestCode.GET_CONSUMER_RUNNING_INFO:
                 return this.getConsumerRunningInfo(ctx, request);
-            //接收来自broker的直接消费指定消息的请求
+            //接收来自broker的直接消费（指定消息）的请求 参看
             case RequestCode.CONSUME_MESSAGE_DIRECTLY:
                 return this.consumeMessageDirectly(ctx, request);
             default:

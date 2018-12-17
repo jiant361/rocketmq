@@ -42,12 +42,16 @@ public class ConsumeQueue {
     private final MappedFileQueue mappedFileQueue;
     private final String topic;
     private final int queueId;
+    // 单个ConsumeQueue消息的内容
     private final ByteBuffer byteBufferIndex;
 
     private final String storePath;
     private final int mappedFileSize;
+    //消息的在commitLog中的offset
     private long maxPhysicOffset = -1;
+    //在consumerQueue中的offset
     private volatile long minLogicOffset = 0;
+    // 消费队列扩展消息
     private ConsumeQueueExt consumeQueueExt = null;
 
     public ConsumeQueue(
@@ -382,6 +386,10 @@ public class ConsumeQueue {
         return this.minLogicOffset / CQ_STORE_UNIT_SIZE;
     }
 
+    /**
+     * 存储consume queueExt信息
+     * @param request
+     */
     public void putMessagePositionInfoWrapper(DispatchRequest request) {
         final int maxRetries = 30;
         boolean canWrite = this.defaultMessageStore.getRunningFlags().isCQWriteable();
@@ -564,6 +572,10 @@ public class ConsumeQueue {
         return this.getMaxOffsetInQueue() - this.getMinOffsetInQueue();
     }
 
+    /**
+     * 消息为单位的offset
+     * @return
+     */
     public long getMaxOffsetInQueue() {
         return this.mappedFileQueue.getMaxOffset() / CQ_STORE_UNIT_SIZE;
     }

@@ -16,6 +16,7 @@
  */
 package org.apache.rocketmq.common.sysflag;
 
+
 public class PullSysFlag {
     private final static int FLAG_COMMIT_OFFSET = 0x1 << 0;//是否提交偏移量，pull模式为false
     private final static int FLAG_SUSPEND = 0x1 << 1;//如果拉取没有数据时是否需要挂起，

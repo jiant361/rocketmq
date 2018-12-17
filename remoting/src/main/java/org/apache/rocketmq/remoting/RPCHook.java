@@ -20,7 +20,9 @@ package org.apache.rocketmq.remoting;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
 /**
- * 远端调用回调
+ * 目前主要客户端使用
+ * 参看 org.apache.rocketmq.remoting.netty.NettyRemotingClient#invokeAsync(java.lang.String, org.apache.rocketmq.remoting.protocol.RemotingCommand, long, org.apache.rocketmq.remoting.InvokeCallback)
+ *
  */
 public interface RPCHook {
     void doBeforeRequest(final String remoteAddr, final RemotingCommand request);

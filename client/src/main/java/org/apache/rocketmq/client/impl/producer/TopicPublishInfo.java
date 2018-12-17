@@ -24,7 +24,8 @@ import org.apache.rocketmq.common.protocol.route.QueueData;
 import org.apache.rocketmq.common.protocol.route.TopicRouteData;
 
 public class TopicPublishInfo {
-    //是否为顺序消息
+    // 该字段标识messageQueueList是按照brokerHost的配置顺序排列的
+    // 参看 org.apache.rocketmq.client.impl.factory.MQClientInstance.topicRouteData2TopicPublishInfo()
     private boolean orderTopic = false;
     //是否包含主题路由信息
     private boolean haveTopicRouterInfo = false;

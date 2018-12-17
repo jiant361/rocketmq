@@ -75,6 +75,10 @@ public class ScheduleMessageService extends ConfigManager {
         return delayLevel - 1;
     }
 
+    /**
+     * 构建运行状态数据
+     * @param stats scheduleMessageOffset_{level}, delayOffset,maxOffset
+     */
     public void buildRunningStats(HashMap<String, String> stats) {
         Iterator<Entry<Integer, Long>> it = this.offsetTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -111,11 +115,13 @@ public class ScheduleMessageService extends ConfigManager {
                 offset = 0L;
             }
 
+            // 延时1s后执行一次task
             if (timeDelay != null) {
                 this.timer.schedule(new DeliverDelayedMessageTimerTask(level, offset), FIRST_DELAY_TIME);
             }
         }
 
+        // 定时持久化
         this.timer.scheduleAtFixedRate(new TimerTask() {
 
             @Override
@@ -164,6 +170,11 @@ public class ScheduleMessageService extends ConfigManager {
         }
     }
 
+    /**
+     * 序列化level offset信息
+     * @param prettyFormat
+     * @return
+     */
     public String encode(final boolean prettyFormat) {
         DelayOffsetSerializeWrapper delayOffsetSerializeWrapper = new DelayOffsetSerializeWrapper();
         delayOffsetSerializeWrapper.setOffsetTable(this.offsetTable);
@@ -224,6 +235,7 @@ public class ScheduleMessageService extends ConfigManager {
         }
 
         /**
+         * 计算派发时间
          * @return
          */
         private long correctDeliverTimestamp(final long now, final long deliverTimestamp) {
@@ -238,7 +250,12 @@ public class ScheduleMessageService extends ConfigManager {
             return result;
         }
 
+        /**
+         * 正常时间执行
+         */
         public void executeOnTimeup() {
+
+            // 获取SCHEDULE_TOPIC queue消息
             ConsumeQueue cq =
                 ScheduleMessageService.this.defaultMessageStore.findConsumeQueue(SCHEDULE_TOPIC,
                     delayLevel2QueueId(delayLevel));
@@ -246,6 +263,7 @@ public class ScheduleMessageService extends ConfigManager {
             long failScheduleOffset = offset;
 
             if (cq != null) {
+                // 读取消息, offset以消息为单位
                 SelectMappedBufferResult bufferCQ = cq.getIndexBuffer(this.offset);
                 if (bufferCQ != null) {
                     try {
@@ -253,6 +271,8 @@ public class ScheduleMessageService extends ConfigManager {
                         int i = 0;
                         ConsumeQueueExt.CqExtUnit cqExtUnit = new ConsumeQueueExt.CqExtUnit();
                         for (; i < bufferCQ.getSize(); i += ConsumeQueue.CQ_STORE_UNIT_SIZE) {
+
+                            // 逐个读取consume queue消息内容
                             long offsetPy = bufferCQ.getByteBuffer().getLong();
                             int sizePy = bufferCQ.getByteBuffer().getInt();
                             long tagsCode = bufferCQ.getByteBuffer().getLong();
@@ -264,6 +284,7 @@ public class ScheduleMessageService extends ConfigManager {
                                     //can't find ext content.So re compute tags code.
                                     log.error("[BUG] can't find consume queue extend file content!addr={}, offsetPy={}, sizePy={}",
                                         tagsCode, offsetPy, sizePy);
+                                    // 根据存储时间和delay时间，计算 deliver时间
                                     long msgStoreTime = defaultMessageStore.getCommitLog().pickupStoreTimestamp(offsetPy, sizePy);
                                     tagsCode = computeDeliverTimestamp(delayLevel, msgStoreTime);
                                 }
@@ -274,8 +295,8 @@ public class ScheduleMessageService extends ConfigManager {
 
                             nextOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);
 
+                            // countdown 小于0 满足执行条件
                             long countdown = deliverTimestamp - now;
-
                             if (countdown <= 0) {
                                 MessageExt msgExt =
                                     ScheduleMessageService.this.defaultMessageStore.lookMessageByOffset(
@@ -283,6 +304,7 @@ public class ScheduleMessageService extends ConfigManager {
 
                                 if (msgExt != null) {
                                     try {
+                                        // 构建内部存储消息, topic 为业务真实topic, 添加到commit log中
                                         MessageExtBrokerInner msgInner = this.messageTimeup(msgExt);
                                         PutMessageResult putMessageResult =
                                             ScheduleMessageService.this.defaultMessageStore
@@ -291,7 +313,10 @@ public class ScheduleMessageService extends ConfigManager {
                                         if (putMessageResult != null
                                             && putMessageResult.getPutMessageStatus() == PutMessageStatus.PUT_OK) {
                                             continue;
-                                        } else {
+                                        }
+
+                                        // 派发失败，接着处理下一个offset
+                                        else {
                                             // XXX: warn and notify me
                                             log.error(
                                                 "ScheduleMessageService, a message time up, but reput it failed, topic: {} msgId {}",
@@ -306,9 +331,6 @@ public class ScheduleMessageService extends ConfigManager {
                                     } catch (Exception e) {
                                         /*
                                          * XXX: warn and notify me
-
-
-
                                          */
                                         log.error(
                                             "ScheduleMessageService, messageTimeup execute error, drop it. msgExt="

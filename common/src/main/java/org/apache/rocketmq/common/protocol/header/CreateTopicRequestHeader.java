@@ -40,7 +40,7 @@ public class CreateTopicRequestHeader implements CommandCustomHeader {
     private String topicFilterType;
     private Integer topicSysFlag;
     @CFNotNull
-    private Boolean order = false;
+    private Boolean order = false; // 此属性暂未找到使用的地方 TODO
 
     @Override
     public void checkFields() throws RemotingCommandException {

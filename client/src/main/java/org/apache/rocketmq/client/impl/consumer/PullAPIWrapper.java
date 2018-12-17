@@ -67,10 +67,18 @@ public class PullAPIWrapper {
         this.unitMode = unitMode;
     }
 
+    /**
+     * 处理拉取结果
+     * @param mq
+     * @param pullResult
+     * @param subscriptionData
+     * @return
+     */
     public PullResult processPullResult(final MessageQueue mq, final PullResult pullResult,
         final SubscriptionData subscriptionData) {
         PullResultExt pullResultExt = (PullResultExt) pullResult;
         //将broker建议从哪个Broker拉取的建议brokerId存入pullFromWhichNodeTable
+        // 更新建议拉取的brokerId
         this.updatePullFromWhichNode(mq, pullResultExt.getSuggestWhichBrokerId());
         //获取消息结果为FOUND，即有新消息
         if (PullStatus.FOUND == pullResult.getPullStatus()) {
@@ -115,6 +123,11 @@ public class PullAPIWrapper {
         return pullResult;
     }
 
+    /**
+     * 更新建议拉取的消息的brokerId
+     * @param mq
+     * @param brokerId
+     */
     public void updatePullFromWhichNode(final MessageQueue mq, final long brokerId) {
         AtomicLong suggest = this.pullFromWhichNodeTable.get(mq);
         if (null == suggest) {
@@ -239,6 +252,13 @@ public class PullAPIWrapper {
         );
     }
 
+    /**
+     * 计算从哪个节点拉取: 一旦发生拉取从master切换到slaver，及时master恢复，也不会切换回去
+     * 参看
+     * org.apache.rocketmq.store.DefaultMessageStore#getMessage(java.lang.String, java.lang.String, int, long, int, org.apache.rocketmq.store.MessageFilter)
+     * @param mq
+     * @return
+     */
     public long recalculatePullFromWhichNode(final MessageQueue mq) {
         if (this.isConnectBrokerByUser()) {
             return this.defaultBrokerId;
