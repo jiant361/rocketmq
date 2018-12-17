@@ -561,7 +561,7 @@ public class RouteInfoManager {
                             }
                         }
                     }
-
+                    //只有在主从都没有的情况下，才更新topicQueueTable信息
                     if (removeBrokerName) {
                         Iterator<Entry<String, List<QueueData>>> itTopicQueueTable =
                             this.topicQueueTable.entrySet().iterator();
