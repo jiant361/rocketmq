@@ -32,7 +32,7 @@ public class PushConsumer {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("CID_JODIE_1");
        // consumer.subscribe("Jodie_topic_1023", "*");
         //设置消费的topic，以及Tag的过滤表达式
-        consumer.subscribe("TopicTest", "*");
+        consumer.subscribe("Jodie_topic_1023", "*");
         //设置消费起点，这里表示从头开始
         consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
         //wrong time format 2017_0422_221800
