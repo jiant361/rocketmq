@@ -253,7 +253,7 @@ public class ScheduleMessageService extends ConfigManager {
         /**
          * 正常时间执行
          */
-        public void executeOnTimeup() {
+        public void () {
 
             // 获取SCHEDULE_TOPIC queue消息
             ConsumeQueue cq =
@@ -272,7 +272,7 @@ public class ScheduleMessageService extends ConfigManager {
                         ConsumeQueueExt.CqExtUnit cqExtUnit = new ConsumeQueueExt.CqExtUnit();
                         for (; i < bufferCQ.getSize(); i += ConsumeQueue.CQ_STORE_UNIT_SIZE) {
 
-                            // 逐个读取consume queue消息内容
+                            // 逐个读取consume queue消息内容executeOnTimeup
                             long offsetPy = bufferCQ.getByteBuffer().getLong();
                             int sizePy = bufferCQ.getByteBuffer().getInt();
                             long tagsCode = bufferCQ.getByteBuffer().getLong();

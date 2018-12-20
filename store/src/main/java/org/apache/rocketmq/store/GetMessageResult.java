@@ -35,6 +35,7 @@ public class GetMessageResult {
 
     private int bufferTotalSize = 0;
 
+    // 是否建议从slaver拉取消息
     private boolean suggestPullingFromSlave = false;
 
     private int msgCount4Commercial = 0;

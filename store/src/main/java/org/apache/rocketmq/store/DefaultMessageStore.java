@@ -193,6 +193,7 @@ public class DefaultMessageStore implements MessageStore {
                 // 加载索引文件
                 this.indexService.load(lastExitOK);
 
+                // 异常关闭，进行恢复
                 this.recover(lastExitOK);
 
                 log.info("load over, and the max phy offset = {}", this.getMaxPhyOffset());

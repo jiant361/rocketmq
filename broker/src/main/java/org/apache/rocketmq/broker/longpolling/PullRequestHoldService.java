@@ -152,10 +152,12 @@ public class PullRequestHoldService extends ServiceThread {
 
                     // maxOffset满足初步拉取条件
                     if (newestOffset > request.getPullFromThisOffset()) {
+                        // 通过布隆过滤器判断，是否满足表达式过滤条件, 布隆过滤值设置，参看org.apache.rocketmq.broker.filter.CommitLogDispatcherCalcBitMap
                         boolean match = request.getMessageFilter().isMatchedByConsumeQueue(tagsCode,
                             new ConsumeQueueExt.CqExtUnit(tagsCode, msgStoreTime, filterBitMap));
                         // match by bit map, need eval again when properties is not null.
                         if (match && properties != null) {
+                            // 判断是否满足属性过滤条件
                             match = request.getMessageFilter().isMatchedByCommitLog(null, properties);
                         }
 

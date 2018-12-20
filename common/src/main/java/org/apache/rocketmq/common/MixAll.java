@@ -132,6 +132,11 @@ public class MixAll {
         return wsAddr;
     }
 
+    /**
+     * 重试topic
+     * @param consumerGroup
+     * @return
+     */
     public static String getRetryTopic(final String consumerGroup) {
         return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
     }

@@ -43,7 +43,8 @@ public class BrokerConfig {
     private int brokerPermission = PermName.PERM_READ | PermName.PERM_WRITE;
     private int defaultTopicQueueNums = 8;
     /**
-     * 开启后
+     * 开启后,系统支持自动创建topic，topic配置信息集成自
+     * 默认topic：org.apache.rocketmq.common.MixAll#AUTO_CREATE_TOPIC_KEY_TOPIC
      */
     @ImportantField
     private boolean autoCreateTopicEnable = true;

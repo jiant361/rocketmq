@@ -461,7 +461,7 @@ public class RouteInfoManager {
     /**
      * 扫描非活跃的broker，并关闭连接
      */
-    public void scanNotActiveBroker() {
+    public void () {
         Iterator<Entry<String, BrokerLiveInfo>> it = this.brokerLiveTable.entrySet().iterator();
         while (it.hasNext()) {
             Entry<String, BrokerLiveInfo> next = it.next();
@@ -475,7 +475,7 @@ public class RouteInfoManager {
         }
     }
 
-    public void onChannelDestroy(String remoteAddr, Channel channel) {
+    public void onChannelDestroy(String remoteAddr, Channel channel) {scanNotActiveBroker
         String brokerAddrFound = null;
         if (channel != null) {
             try {

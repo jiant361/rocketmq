@@ -187,7 +187,7 @@ public class HAConnection {
                                 log.info("slave[" + HAConnection.this.clientAddr + "] request offset " + readOffset);
                             }
 
-                            // 通知当前slave的进度，用于 TODO
+                            // 通知当前slave的进度，发送同步成功的ackOffset
                             HAConnection.this.haService.notifyTransferSome(HAConnection.this.slaveAckOffset);
                         }
                     } else if (readSize == 0) {
@@ -269,7 +269,7 @@ public class HAConnection {
                         long interval =
                             HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now() - this.lastWriteTimestamp;
 
-                        // 当前是时间与上次发送时间间隔大于心跳间隔，则消息体长度为0（仅包含消息头）的消息（心跳消息？未确定 TODO）
+                        // 当前是时间与上次发送时间间隔大于心跳间隔，则消息体长度为0（仅包含消息头）的消息（心跳消息）
                         if (interval > HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig()
                             .getHaSendHeartbeatInterval()) {
 

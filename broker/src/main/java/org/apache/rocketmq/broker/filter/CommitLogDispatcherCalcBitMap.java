@@ -44,6 +44,10 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
         this.consumerFilterManager = consumerFilterManager;
     }
 
+    /**
+     * 过滤条件判断，满足过滤条件将consumerGroup + "#" + topic添加到该消息的布隆过滤其中
+     * @param request
+     */
     @Override
     public void dispatch(DispatchRequest request) {
         if (!this.brokerConfig.isEnableCalcFilterBitMap()) {
@@ -88,7 +92,8 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
 
                 log.debug("Result of Calc bit map:ret={}, data={}, props={}, offset={}", ret, filterData, request.getPropertiesMap(), request.getCommitLogOffset());
 
-                // eval true, 计算bitMap
+                // eval true, 该消息满足consumerGroup + "#" + topic过滤条件，添加到布隆过滤器
+                // 长轮询推送消息时使用，参看org.apache.rocketmq.broker.longpolling.PullRequestHoldService#notifyMessageArriving()
                 if (ret != null && ret instanceof Boolean && (Boolean) ret) {
                     consumerFilterManager.getBloomFilter().hashTo(
                         filterData.getBloomFilterData(),

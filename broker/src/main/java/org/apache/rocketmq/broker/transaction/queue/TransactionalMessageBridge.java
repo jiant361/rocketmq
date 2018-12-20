@@ -223,6 +223,11 @@ public class TransactionalMessageBridge {
         return foundList;
     }
 
+    /**
+     * 创建halfMessage
+     * @param messageInner
+     * @return
+     */
     public PutMessageResult putHalfMessage(MessageExtBrokerInner messageInner) {
         return store.putMessage(parseHalfMessageInner(messageInner));
     }
@@ -239,6 +244,12 @@ public class TransactionalMessageBridge {
         return msgInner;
     }
 
+    /**
+     * 存储opmessage
+     * @param messageExt
+     * @param opType
+     * @return
+     */
     public boolean putOpMessage(MessageExt messageExt, String opType) {
         MessageQueue messageQueue = new MessageQueue(messageExt.getTopic(),
             this.brokerController.getBrokerConfig().getBrokerName(), messageExt.getQueueId());

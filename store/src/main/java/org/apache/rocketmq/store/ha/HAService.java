@@ -382,7 +382,7 @@ public class HAService {
          * @param maxOffset
          * @return
          */
-        private boolean reportSlaveMaxOffset(final long maxOffset) {
+        private boolean (final long maxOffset) {
             this.reportOffset.position(0);
             this.reportOffset.limit(8);
             this.reportOffset.putLong(maxOffset);
@@ -402,7 +402,7 @@ public class HAService {
             return !this.reportOffset.hasRemaining();
         }
 
-        /**
+        /**reportSlaveMaxOffset
          * 如果byteBufferRead内容不为空（需要进行粘包），重置
          * position为第一个非空的位置，dispatchPostion重置为0
          */
@@ -542,6 +542,11 @@ public class HAService {
             return result;
         }
 
+        /**
+         * 创建与master的连接
+         * @return
+         * @throws ClosedChannelException
+         */
         private boolean connectMaster() throws ClosedChannelException {
             if (null == socketChannel) {
                 String addr = this.masterAddress.get();
