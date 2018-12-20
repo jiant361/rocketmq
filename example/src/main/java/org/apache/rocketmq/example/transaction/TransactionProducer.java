@@ -52,7 +52,7 @@ public class TransactionProducer {
         for (int i = 0; i < 10; i++) {
             try {
                 Message msg =
-                    new Message("TopicTest1234", tags[i % tags.length], "KEY" + i,
+                    new Message("Jodie_topic_1023", tags[i % tags.length], "KEY" + i,
                         ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET));
                 SendResult sendResult = producer.sendMessageInTransaction(msg, null);
                 System.out.printf("%s%n", sendResult);
