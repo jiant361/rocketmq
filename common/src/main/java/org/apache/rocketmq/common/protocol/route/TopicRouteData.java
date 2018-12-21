@@ -29,7 +29,7 @@ import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
  * topic路由信息
  */
 public class TopicRouteData extends RemotingSerializable {
-    //brokerName:num count,用于生产者获取queue队列个数
+    //brokerName:queueNum,用于生产者获取queue队列个数
     private String orderTopicConf;
     private List<QueueData> queueDatas;
     private List<BrokerData> brokerDatas;
