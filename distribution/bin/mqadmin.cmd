@@ -14,5 +14,5 @@ rem WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 rem See the License for the specific language governing permissions and
 rem limitations under the License.
 
-if not exist "%ROCKETMQ_HOME%\bin\tools.cmd" echo Please set the ROCKETMQ_HOME variable in your environment! & EXIT /B 1
-call "%ROCKETMQ_HOME%\bin\tools.cmd" org.apache.rocketmq.tools.command.MQAdminStartup %*
+if not exist "D:\Users\DELL\git\rocketmq\distribution\bin\tools.cmd" echo Please set the ROCKETMQ_HOME variable in your environment! & EXIT /B 1
+call "D:\Users\DELL\git\rocketmq\distribution\bin\tools.cmd" org.apache.rocketmq.tools.command.MQAdminStartup %*

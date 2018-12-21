@@ -39,7 +39,7 @@ public class Producer {
             for (int i = 0; i < 100; i++) {
                 int orderId = i % 10;
                 Message msg =
-                    new Message("TopicTestjjj", tags[i % tags.length], "KEY" + i,
+                    new Message("test", tags[i % tags.length], "KEY" + i,
                         ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET));
                 //顺序消息，只支持同步发送，且需要实现队列选择器，即指定需要发往的队列id，如下所示：MessageQueueSelector
                 SendResult sendResult = producer.send(msg, new MessageQueueSelector() {
